@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "524712351831",
+    "project_id": "gps-attendance-kpk",
+    "storage_bucket": "gps-attendance-kpk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:524712351831:android:8471dd61fc2640a6b3ab12",
+        "android_client_info": {
+          "package_name": "com.school.gps.gps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcQ3PkScxV0ZuwCk4HS4RYc35NkvTF2FY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

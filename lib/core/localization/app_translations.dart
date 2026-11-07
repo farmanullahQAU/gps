@@ -1,0 +1,178 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class LocaleController extends GetxController {
+  static const String _prefLangKey = 'kpk_app_language';
+  final RxBool isUrdu = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadSavedLocale();
+  }
+
+  Future<void> _loadSavedLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lang = prefs.getString(_prefLangKey) ?? 'en';
+    isUrdu.value = (lang == 'ur');
+    Get.updateLocale(isUrdu.value ? const Locale('ur', 'PK') : const Locale('en', 'US'));
+  }
+
+  Future<void> toggleLanguage() async {
+    isUrdu.value = !isUrdu.value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefLangKey, isUrdu.value ? 'ur' : 'en');
+    Get.updateLocale(isUrdu.value ? const Locale('ur', 'PK') : const Locale('en', 'US'));
+  }
+}
+
+class AppTranslations extends Translations {
+  @override
+  Map<String, Map<String, String>> get keys => {
+        'en_US': {
+          'app_title': 'GPS KPK Attendance',
+          'kpk_dept': 'Elementary & Secondary Education Dept • Govt of KPK',
+          'home': 'Home',
+          'attendance': 'Attendance',
+          'qr_scanner': 'QR Scanner',
+          'pdf_reports': 'Reports',
+          'school_services': 'Services',
+          'admin_setup': 'School Admin',
+          'settings': 'Settings',
+          'students_dir': 'Students & ID Cards',
+          'sync_status': 'Cloud Sync',
+          'synced': 'Synced',
+          'pending': 'Pending',
+          'take_attendance': 'Take Attendance',
+          'mark_all_present': 'Mark All',
+          'finalize_session': 'Finalize Register',
+          'session_finalized': 'Session Finalized',
+          'session_draft': 'Draft Session',
+          'present': 'Present',
+          'absent': 'Absent',
+          'late': 'Late',
+          'leave': 'Leave',
+          'half_day': 'Half-Day',
+          'unmarked': 'Unmarked',
+          'active_class': 'Active Class:',
+          'change_class': 'Change Class',
+          'quick_actions': 'Quick Actions',
+          'greeting': 'Assalam-o-Alaikum,',
+          'kpk_primary_section': 'KPK Primary Section (Kachi - Class 5)',
+          'today_overview': "Today's Attendance Overview",
+          'complete_register': 'COMPLETE ATTENDANCE REGISTER',
+          'view_edit_register': 'VIEW / EDIT TODAY REGISTER',
+          'school_setup_title': 'School Administration',
+          'correction_requests': 'Correction Requests',
+          'audit_trail': 'Audit History',
+          'holidays_calendar': 'Gazetted Holidays',
+          'manage_classes': 'Classes & Sections',
+          'manage_teachers': 'PST Teachers',
+          'student_attendance': 'Student Attendance',
+          'parent_whatsapp': 'Parent WhatsApp',
+          'attendance_register': 'Daily Attendance Register',
+          'lock_and_sync': 'Lock & Sync Register',
+          'locked_and_synced': 'Locked & Synced',
+          'sync_to_cloud': 'Sync to Cloud',
+          'lock_register': 'Lock Register',
+          'register_locked': 'Register Locked',
+          'reopen_register': 'Reopen Register',
+          'register_locked_msg': 'Register is locked. Tap "Reopen Register" to edit.',
+          // Extended KPK E&SED & Reporting Vocabulary
+          'first_time_session': '1st Time Session',
+          'second_time_session': '2nd Time Session',
+          'monthly_matrix': 'KPK Monthly Register (گوشوارہ حاضری ماہانہ)',
+          'class_register': 'Official Two-Time Class Register',
+          'daily_sheet': 'Daily Attendance Master Sheet',
+          'student_dossier': 'Individual Student Attendance Dossier',
+          'slc_certificate': 'Official School Leaving & Character Certificate (داخل خارج)',
+          'admin_summary': 'School-Wide ASDEO Inspection Summary',
+          'preview_pdf': 'Preview PDF',
+          'print_export': 'Print / Export',
+          'export_csv': 'Export CSV',
+          'backup_restore': 'Offline Database Backup & Restore',
+          'create_snapshot': 'Create Snapshot Now',
+          'edit_profile': 'Edit Profile',
+          'sign_out': 'Sign Out',
+          'roll_no': 'Roll No',
+          'admission_no': 'Admission No (داخل خارج نمبر)',
+          'father_name': 'Father / Guardian Name',
+          'head_teacher': 'Head Teacher',
+          'class_teacher': 'Class Incharge (PST)',
+          'alert_parents': 'Alert Parents',
+        },
+        'ur_PK': {
+          'app_title': 'جی پی ایس حاضری سسٹم (خیبر پختونخوا)',
+          'kpk_dept': 'محکمہ ابتدائی و ثانوی تعلیم • حکومت خیبر پختونخوا',
+          'home': 'ہوم',
+          'attendance': 'حاضری رجسٹر',
+          'qr_scanner': 'کیو آر اسکینر',
+          'pdf_reports': 'رپورٹس',
+          'school_services': 'سرکاری خدمات',
+          'admin_setup': 'اسکول انتظامیہ',
+          'settings': 'ترتیبات',
+          'students_dir': 'طلباء اور کارڈز',
+          'sync_status': 'کلاؤڈ سنک',
+          'synced': 'محفوظ شدہ',
+          'pending': 'باقی',
+          'take_attendance': 'حاضری لگائیں',
+          'mark_all_present': 'سب حاضر',
+          'finalize_session': 'حاضری مکمل کریں',
+          'session_finalized': 'حاضری مکمل شدہ',
+          'session_draft': 'جاری حاضری',
+          'present': 'حاضر',
+          'absent': 'غیر حاضر',
+          'late': 'تاخیر',
+          'leave': 'رخصت',
+          'half_day': 'نصف دن',
+          'unmarked': 'بقیہ',
+          'active_class': 'منتخب جماعت:',
+          'change_class': 'جماعت بدلیں',
+          'quick_actions': 'فوری اقدامات',
+          'greeting': 'السلام علیکم،',
+          'kpk_primary_section': 'پرائمری سیکشن (کچی تا جماعت پنجم)',
+          'today_overview': 'آج کی حاضری کا خلاصہ',
+          'complete_register': 'حاضری رجسٹر مکمل کریں',
+          'view_edit_register': 'آج کا حاضری رجسٹر دیکھیں',
+          'school_setup_title': 'اسکول انتظامیہ',
+          'correction_requests': 'تصحیح کی درخواستیں',
+          'audit_trail': 'آڈٹ ریکارڈ',
+          'holidays_calendar': 'سرکاری تعطیلات',
+          'manage_classes': 'جماعتیں اور سیکشن',
+          'manage_teachers': 'اساتذہ (PST)',
+          'student_attendance': 'طالب علم حاضری',
+          'parent_whatsapp': 'والدین واٹس ایپ',
+          'attendance_register': 'روزانہ حاضری رجسٹر',
+          'lock_and_sync': 'رجسٹر لاک اور سنک کریں',
+          'locked_and_synced': 'محفوظ و ہم آہنگ شدہ',
+          'sync_to_cloud': 'کلاؤڈ سنک کریں',
+          'lock_register': 'رجسٹر لاک کریں',
+          'register_locked': 'رجسٹر لاک شدہ',
+          'reopen_register': 'رجسٹر دوبارہ کھولیں',
+          'register_locked_msg': 'رجسٹر لاک ہے۔ ترمیم کے لیے دوبارہ کھولیں۔',
+          // Extended KPK E&SED & Reporting Vocabulary
+          'first_time_session': 'پہلی حاضری (صبح)',
+          'second_time_session': 'دوسری حاضری (دوپہر)',
+          'monthly_matrix': 'گوشوارہ حاضری ماہانہ',
+          'class_register': 'سرکاری دو وقتی حاضری رجسٹر',
+          'daily_sheet': 'روزانہ حاضری شیٹ',
+          'student_dossier': 'طالب علم کا مکمل حاضری ریکارڈ',
+          'slc_certificate': 'سرٹیفکیٹ داخل خارج و چال چلن',
+          'admin_summary': 'اسکول حاضری خلاصہ برائے معائنہ (ASDEO)',
+          'preview_pdf': 'پی ڈی ایف دیکھیں',
+          'print_export': 'پرنٹ / ایکسپورٹ',
+          'export_csv': 'سی ایس وی ایکسپورٹ',
+          'backup_restore': 'آف لائن ڈیٹا بیس بیک اپ اور بحالی',
+          'create_snapshot': 'بیک اپ محفوظ کریں',
+          'edit_profile': 'پروفائل میں ترمیم',
+          'sign_out': 'لاگ آؤٹ',
+          'roll_no': 'رول نمبر',
+          'admission_no': 'داخل خارج نمبر',
+          'father_name': 'والد / سرپرست کا نام',
+          'head_teacher': 'صدر معلم (Head Teacher)',
+          'class_teacher': 'کلاس انچارج (PST)',
+          'alert_parents': 'والدین کو اطلاع دیں',
+        },
+      };
+}
