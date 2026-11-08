@@ -32,16 +32,42 @@ class _TeacherDetailsViewState extends State<TeacherDetailsView> {
   String? _avatarPath;
   bool _isSaving = false;
 
+  // Goshwara Service Particulars (کوائف سروس و گوشوارہ)
+  late TextEditingController _fatherNameCtrl;
+  late TextEditingController _personalNoCtrl;
+  late TextEditingController _dobCtrl;
+  late TextEditingController _acadQualCtrl;
+  late TextEditingController _profQualCtrl;
+  late TextEditingController _apptDateCtrl;
+  late TextEditingController _transferDateCtrl;
+  late TextEditingController _bpsCtrl;
+  late TextEditingController _bpsDateCtrl;
+  late TextEditingController _basicPayCtrl;
+  late TextEditingController _villageCtrl;
+  late TextEditingController _unionCouncilCtrl;
+  late TextEditingController _districtCtrl;
+  String _employmentType = 'permanent';
+  TeacherGoshwaraProfile? _initialGoshwaraProfile;
+  bool _isLoadingGoshwara = true;
+
   final ImagePicker _picker = ImagePicker();
 
   static const List<String> _designationOptions = [
     'Primary School Teacher (PST)',
     'Senior Primary School Teacher (SPST)',
-    'Head Teacher / Incharge',
+    'Head Teacher / Incharge (PSHT)',
     'Certified Teacher (CT)',
-    'Drawing Master (DM)',
+    'Arabic Teacher (AT)',
+    'Theology Teacher (TT)',
     'Physical Education Teacher (PET)',
-    'Qari / Arabic Teacher (AT)',
+    'Drawing Master (DM)',
+    'Qari / Arabic Teacher',
+    'Class IV / Naib Qasid (نائب قاصد)',
+    'Chowkidar (چوکیدار)',
+    'Mali / Ground Staff (مالی)',
+    'Water Carrier / Sweeper (خاک روب)',
+    'School Administrator / Clerk',
+    'IT Incharge / Lab Assistant',
   ];
 
   static const List<String> _avatarPresets = [
@@ -66,6 +92,20 @@ class _TeacherDetailsViewState extends State<TeacherDetailsView> {
     _role = t.role;
     _avatarPath = t.avatarUrl;
 
+    _fatherNameCtrl = TextEditingController();
+    _personalNoCtrl = TextEditingController();
+    _dobCtrl = TextEditingController();
+    _acadQualCtrl = TextEditingController();
+    _profQualCtrl = TextEditingController();
+    _apptDateCtrl = TextEditingController();
+    _transferDateCtrl = TextEditingController();
+    _bpsCtrl = TextEditingController(text: '14');
+    _bpsDateCtrl = TextEditingController();
+    _basicPayCtrl = TextEditingController();
+    _villageCtrl = TextEditingController();
+    _unionCouncilCtrl = TextEditingController();
+    _districtCtrl = TextEditingController();
+
     // Resolve assigned class
     final attCtrl = Get.find<AttendanceController>();
     for (final entry in attCtrl.classFormMasterIdMap.entries) {
@@ -73,6 +113,37 @@ class _TeacherDetailsViewState extends State<TeacherDetailsView> {
         _assignedClassId = entry.key;
         break;
       }
+    }
+
+    _loadGoshwaraParticulars();
+  }
+
+  Future<void> _loadGoshwaraParticulars() async {
+    try {
+      final adminCtrl = Get.find<AdminController>();
+      final prof = await adminCtrl.studentRepository.getTeacherGoshwaraProfile(widget.teacher.id);
+      _initialGoshwaraProfile = prof;
+      if (mounted) {
+        setState(() {
+          _fatherNameCtrl.text = prof.fatherName;
+          _personalNoCtrl.text = prof.personalNo;
+          _dobCtrl.text = prof.dob;
+          _acadQualCtrl.text = prof.academicQualification;
+          _profQualCtrl.text = prof.professionalQualification;
+          _apptDateCtrl.text = prof.appointmentDate;
+          _transferDateCtrl.text = prof.transferInDate;
+          _bpsCtrl.text = prof.currentBps.isNotEmpty ? prof.currentBps : '14';
+          _bpsDateCtrl.text = prof.bpsAwardDate;
+          _basicPayCtrl.text = prof.basicPay > 0 ? prof.basicPay.toStringAsFixed(0) : '';
+          _villageCtrl.text = prof.village;
+          _unionCouncilCtrl.text = prof.unionCouncil;
+          _districtCtrl.text = prof.district;
+          _employmentType = prof.employmentType;
+          _isLoadingGoshwara = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingGoshwara = false);
     }
   }
 
@@ -83,6 +154,19 @@ class _TeacherDetailsViewState extends State<TeacherDetailsView> {
     _phoneCtrl.dispose();
     _cnicCtrl.dispose();
     _pinCtrl.dispose();
+    _fatherNameCtrl.dispose();
+    _personalNoCtrl.dispose();
+    _dobCtrl.dispose();
+    _acadQualCtrl.dispose();
+    _profQualCtrl.dispose();
+    _apptDateCtrl.dispose();
+    _transferDateCtrl.dispose();
+    _bpsCtrl.dispose();
+    _bpsDateCtrl.dispose();
+    _basicPayCtrl.dispose();
+    _villageCtrl.dispose();
+    _unionCouncilCtrl.dispose();
+    _districtCtrl.dispose();
     super.dispose();
   }
 
@@ -454,6 +538,26 @@ class _TeacherDetailsViewState extends State<TeacherDetailsView> {
         assignedClassId: _assignedClassId,
       );
 
+      // Persist Goshwara Service Particulars (کوائف سروس و گوشوارہ)
+      final currentProf = _initialGoshwaraProfile ?? TeacherGoshwaraProfile(userId: widget.teacher.id);
+      final updatedProf = currentProf.copyWith(
+        fatherName: _fatherNameCtrl.text.trim(),
+        personalNo: _personalNoCtrl.text.trim(),
+        dob: _dobCtrl.text.trim(),
+        academicQualification: _acadQualCtrl.text.trim(),
+        professionalQualification: _profQualCtrl.text.trim(),
+        appointmentDate: _apptDateCtrl.text.trim(),
+        transferInDate: _transferDateCtrl.text.trim(),
+        currentBps: _bpsCtrl.text.trim(),
+        bpsAwardDate: _bpsDateCtrl.text.trim(),
+        basicPay: double.tryParse(_basicPayCtrl.text.trim()) ?? 0.0,
+        village: _villageCtrl.text.trim(),
+        unionCouncil: _unionCouncilCtrl.text.trim(),
+        district: _districtCtrl.text.trim(),
+        employmentType: _employmentType,
+      );
+      await adminCtrl.studentRepository.saveTeacherGoshwaraProfile(updatedProf);
+
       Get.back();
     } catch (e) {
       Get.snackbar('Error Updating Teacher', e.toString());
@@ -645,6 +749,200 @@ class _TeacherDetailsViewState extends State<TeacherDetailsView> {
                     onChanged: isAdmin ? (val) => setState(() => _assignedClassId = val) : null,
                   );
                 }),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // 5. Goshwara Service Particulars Card (Teaching & Non-Teaching)
+            _cardSection(
+              title: 'Service & Goshwara Particulars (کوائف سروس و ماہانہ رپورٹ)',
+              icon: Icons.history_edu_rounded,
+              children: [
+                const Text(
+                  'These details automatically populate the official KPK Monthly Goshwara report for both teaching faculty and support staff.',
+                  style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 12),
+                if (_isLoadingGoshwara)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _fatherNameCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: "Father's Name (ولدیت)",
+                            prefixIcon: Icon(Icons.person_outline_rounded, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _personalNoCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: 'Personal # (پرسنل نمبر)',
+                            prefixIcon: Icon(Icons.numbers_rounded, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _dobCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: 'DOB (پیدائش: DD-MM-YYYY)',
+                            prefixIcon: Icon(Icons.cake_outlined, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _basicPayCtrl,
+                          enabled: canEdit,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Basic Pay (تنخواہ PKR)',
+                            prefixIcon: Icon(Icons.payments_outlined, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _bpsCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: 'Current BPS (اسکیل)',
+                            prefixIcon: Icon(Icons.military_tech_outlined, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _bpsDateCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: 'BPS Award Date (تاریخ)',
+                            prefixIcon: Icon(Icons.event_available_outlined, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _acadQualCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: 'Academic (تعلیمی قابلیت)',
+                            prefixIcon: Icon(Icons.school_outlined, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _profQualCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: 'Professional (پیشہ ورانہ)',
+                            prefixIcon: Icon(Icons.card_membership_outlined, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _apptDateCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: 'Appt Date (آغاز ملازمت)',
+                            prefixIcon: Icon(Icons.calendar_today_outlined, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _transferDateCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: 'School Date (آمد اسکول)',
+                            prefixIcon: Icon(Icons.login_rounded, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _villageCtrl,
+                          enabled: canEdit,
+                          decoration: const InputDecoration(
+                            labelText: 'Village (گاؤں)',
+                            prefixIcon: Icon(Icons.home_outlined, size: 18),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _employmentType,
+                          decoration: const InputDecoration(
+                            labelText: 'Employment Type',
+                            isDense: true,
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'permanent', child: Text('Permanent (مستقل)', style: TextStyle(fontSize: 12.5))),
+                            DropdownMenuItem(value: 'fixed', child: Text('Fixed / Contract (معاہدہ)', style: TextStyle(fontSize: 12.5))),
+                          ],
+                          onChanged: canEdit ? (v) => setState(() => _employmentType = v ?? 'permanent') : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
 

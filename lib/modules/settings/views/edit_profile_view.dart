@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/biometric_auth_service.dart';
+import '../../../data/models/teacher_goshwara_profile_model.dart';
+import '../../../data/repositories/student_repository.dart';
 import '../../auth/auth_controller.dart';
 
 class EditProfileView extends StatefulWidget {
@@ -31,9 +33,27 @@ class _EditProfileViewState extends State<EditProfileView> {
   bool _obscurePin = true;
   bool _isSaving = false;
 
+  // Goshwara Service Particulars (کوائف سروس و گوشوارہ)
+  late TextEditingController _fatherNameCtrl;
+  late TextEditingController _personalNoCtrl;
+  late TextEditingController _dobCtrl;
+  late TextEditingController _acadQualCtrl;
+  late TextEditingController _profQualCtrl;
+  late TextEditingController _apptDateCtrl;
+  late TextEditingController _transferDateCtrl;
+  late TextEditingController _bpsCtrl;
+  late TextEditingController _bpsDateCtrl;
+  late TextEditingController _basicPayCtrl;
+  late TextEditingController _villageCtrl;
+  late TextEditingController _unionCouncilCtrl;
+  late TextEditingController _districtCtrl;
+  String _employmentType = 'permanent';
+  TeacherGoshwaraProfile? _initialGoshwaraProfile;
+  bool _isLoadingGoshwara = true;
+
   final List<String> _designationOptions = [
-    'Head Teacher / Principal',
-    'Senior Teacher',
+    'Head Teacher / Principal (PSHT)',
+    'Senior Primary School Teacher (SPST)',
     'Primary School Teacher (PST)',
     'Certified Teacher (CT)',
     'Arabic Teacher (AT)',
@@ -41,7 +61,11 @@ class _EditProfileViewState extends State<EditProfileView> {
     'Physical Education Teacher (PET)',
     'Drawing Master (DM)',
     'Qari / Qaria',
-    'School Administrator',
+    'Class IV / Naib Qasid (نائب قاصد)',
+    'Chowkidar (چوکیدار)',
+    'Mali / Ground Staff (مالی)',
+    'Water Carrier / Sweeper (خاک روب)',
+    'School Administrator / Clerk',
     'IT Incharge / Assistant',
   ];
 
@@ -66,11 +90,61 @@ class _EditProfileViewState extends State<EditProfileView> {
     _confirmPasswordController = TextEditingController();
     _pinController = TextEditingController();
 
+    _fatherNameCtrl = TextEditingController();
+    _personalNoCtrl = TextEditingController();
+    _dobCtrl = TextEditingController();
+    _acadQualCtrl = TextEditingController();
+    _profQualCtrl = TextEditingController();
+    _apptDateCtrl = TextEditingController();
+    _transferDateCtrl = TextEditingController();
+    _bpsCtrl = TextEditingController(text: '14');
+    _bpsDateCtrl = TextEditingController();
+    _basicPayCtrl = TextEditingController();
+    _villageCtrl = TextEditingController();
+    _unionCouncilCtrl = TextEditingController();
+    _districtCtrl = TextEditingController();
+
     _selectedDesignation = user?.designation;
     if (_selectedDesignation != null && !_designationOptions.contains(_selectedDesignation)) {
       _designationOptions.insert(0, _selectedDesignation!);
     }
     _selectedAvatarUrl = user?.avatarUrl;
+
+    _loadGoshwaraParticulars();
+  }
+
+  Future<void> _loadGoshwaraParticulars() async {
+    final user = _authCtrl.currentUser.value;
+    if (user == null) {
+      setState(() => _isLoadingGoshwara = false);
+      return;
+    }
+    try {
+      final studentRepo = Get.find<StudentRepository>();
+      final prof = await studentRepo.getTeacherGoshwaraProfile(user.id);
+      _initialGoshwaraProfile = prof;
+      if (mounted) {
+        setState(() {
+          _fatherNameCtrl.text = prof.fatherName;
+          _personalNoCtrl.text = prof.personalNo;
+          _dobCtrl.text = prof.dob;
+          _acadQualCtrl.text = prof.academicQualification;
+          _profQualCtrl.text = prof.professionalQualification;
+          _apptDateCtrl.text = prof.appointmentDate;
+          _transferDateCtrl.text = prof.transferInDate;
+          _bpsCtrl.text = prof.currentBps.isNotEmpty ? prof.currentBps : '14';
+          _bpsDateCtrl.text = prof.bpsAwardDate;
+          _basicPayCtrl.text = prof.basicPay > 0 ? prof.basicPay.toStringAsFixed(0) : '';
+          _villageCtrl.text = prof.village;
+          _unionCouncilCtrl.text = prof.unionCouncil;
+          _districtCtrl.text = prof.district;
+          _employmentType = prof.employmentType;
+          _isLoadingGoshwara = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingGoshwara = false);
+    }
   }
 
   @override
@@ -82,6 +156,19 @@ class _EditProfileViewState extends State<EditProfileView> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _pinController.dispose();
+    _fatherNameCtrl.dispose();
+    _personalNoCtrl.dispose();
+    _dobCtrl.dispose();
+    _acadQualCtrl.dispose();
+    _profQualCtrl.dispose();
+    _apptDateCtrl.dispose();
+    _transferDateCtrl.dispose();
+    _bpsCtrl.dispose();
+    _bpsDateCtrl.dispose();
+    _basicPayCtrl.dispose();
+    _villageCtrl.dispose();
+    _unionCouncilCtrl.dispose();
+    _districtCtrl.dispose();
     super.dispose();
   }
 
@@ -224,6 +311,30 @@ class _EditProfileViewState extends State<EditProfileView> {
       newPassword: newPassword.isEmpty ? null : newPassword,
       newPin: newPin.isEmpty ? null : newPin,
     );
+
+    // Persist Goshwara Service Particulars (کوائف سروس و گوشوارہ)
+    try {
+      final currentProf = _initialGoshwaraProfile ?? TeacherGoshwaraProfile(userId: user.id);
+      final updatedProf = currentProf.copyWith(
+        fatherName: _fatherNameCtrl.text.trim(),
+        personalNo: _personalNoCtrl.text.trim(),
+        dob: _dobCtrl.text.trim(),
+        academicQualification: _acadQualCtrl.text.trim(),
+        professionalQualification: _profQualCtrl.text.trim(),
+        appointmentDate: _apptDateCtrl.text.trim(),
+        transferInDate: _transferDateCtrl.text.trim(),
+        currentBps: _bpsCtrl.text.trim(),
+        bpsAwardDate: _bpsDateCtrl.text.trim(),
+        basicPay: double.tryParse(_basicPayCtrl.text.trim()) ?? 0.0,
+        village: _villageCtrl.text.trim(),
+        unionCouncil: _unionCouncilCtrl.text.trim(),
+        district: _districtCtrl.text.trim(),
+        employmentType: _employmentType,
+      );
+      final studentRepo = Get.find<StudentRepository>();
+      await studentRepo.saveTeacherGoshwaraProfile(updatedProf);
+    } catch (_) {}
+
     setState(() => _isSaving = false);
 
     if (ok && mounted) {
@@ -430,6 +541,184 @@ class _EditProfileViewState extends State<EditProfileView> {
                       hintText: 'teacher@kpk.edu.pk',
                     ),
                   ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 3. Service & Goshwara Particulars (Teaching & Non-Teaching)
+            _buildSectionHeader('SERVICE & GOSHWARA PARTICULARS (کوائف سروس و گوشوارہ)'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: _cardBox(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'These service particulars automatically populate Part I of the official KPK Monthly Goshwara report for teaching faculty and support staff.',
+                    style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 14),
+                  if (_isLoadingGoshwara)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _fatherNameCtrl,
+                            decoration: _inputDecoration(
+                              labelText: "Father's Name (ولدیت)",
+                              prefixIcon: Icons.person_outline_rounded,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _personalNoCtrl,
+                            decoration: _inputDecoration(
+                              labelText: 'Personal # (پرسنل نمبر)',
+                              prefixIcon: Icons.numbers_rounded,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _dobCtrl,
+                            decoration: _inputDecoration(
+                              labelText: 'DOB (DD-MM-YYYY)',
+                              prefixIcon: Icons.cake_outlined,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _basicPayCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: _inputDecoration(
+                              labelText: 'Basic Pay (PKR)',
+                              prefixIcon: Icons.payments_outlined,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _bpsCtrl,
+                            decoration: _inputDecoration(
+                              labelText: 'Current BPS (اسکیل)',
+                              prefixIcon: Icons.military_tech_outlined,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _bpsDateCtrl,
+                            decoration: _inputDecoration(
+                              labelText: 'Scale Award Date',
+                              prefixIcon: Icons.event_available_outlined,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _acadQualCtrl,
+                            decoration: _inputDecoration(
+                              labelText: 'Academic (تعلیم)',
+                              prefixIcon: Icons.school_outlined,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _profQualCtrl,
+                            decoration: _inputDecoration(
+                              labelText: 'Professional (پیشہ ورانہ)',
+                              prefixIcon: Icons.card_membership_outlined,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _apptDateCtrl,
+                            decoration: _inputDecoration(
+                              labelText: 'Appt Date (آغاز)',
+                              prefixIcon: Icons.calendar_today_outlined,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _transferDateCtrl,
+                            decoration: _inputDecoration(
+                              labelText: 'School Date (آمد)',
+                              prefixIcon: Icons.login_rounded,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _villageCtrl,
+                            decoration: _inputDecoration(
+                              labelText: 'Village (گاؤں)',
+                              prefixIcon: Icons.home_outlined,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: _employmentType,
+                            decoration: _inputDecoration(
+                              labelText: 'Employment Type',
+                              prefixIcon: Icons.badge_outlined,
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'permanent', child: Text('Permanent (مستقل)', style: TextStyle(fontSize: 12.5))),
+                              DropdownMenuItem(value: 'fixed', child: Text('Fixed / Contract (عارضی)', style: TextStyle(fontSize: 12.5))),
+                            ],
+                            onChanged: (v) => setState(() => _employmentType = v ?? 'permanent'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

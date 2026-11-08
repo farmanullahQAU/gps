@@ -1618,7 +1618,7 @@ class TeachersManagementSubPage extends StatelessWidget {
       backgroundColor: AppColors.bgLight,
       appBar: AppBar(
         title: const Text(
-          'Faculty & Teaching Staff',
+          'School Faculty & Staff (اسٹاف)',
           style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800),
         ),
         backgroundColor: AppColors.primaryDark,
@@ -1631,7 +1631,7 @@ class TeachersManagementSubPage extends StatelessWidget {
               final staff = adminCtrl.teachers;
               if (staff.isEmpty) {
                 return const Center(
-                  child: Text('No teachers registered yet.', style: TextStyle(color: AppColors.textSecondary)),
+                  child: Text('No teaching or support staff registered yet.', style: TextStyle(color: AppColors.textSecondary)),
                 );
               }
               return ListView.separated(
@@ -1653,6 +1653,12 @@ class TeachersManagementSubPage extends StatelessWidget {
                     }
                   }
 
+                  final isSupport = designation.contains('Class IV') ||
+                      designation.contains('Naib Qasid') ||
+                      designation.contains('Chowkidar') ||
+                      designation.contains('Mali') ||
+                      designation.contains('Sweeper');
+
                   return Container(
                     decoration: _groupCardDecoration(),
                     child: ListTile(
@@ -1669,15 +1675,27 @@ class TeachersManagementSubPage extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
-                              color: isHT ? const Color(0xFFFEF3C7) : AppColors.primaryLight,
+                              color: isHT
+                                  ? const Color(0xFFFEF3C7)
+                                  : isSupport
+                                      ? const Color(0xFFF3E8FF)
+                                      : AppColors.primaryLight,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              isHT ? 'ADMIN' : 'FACULTY',
+                              isHT
+                                  ? 'ADMIN'
+                                  : isSupport
+                                      ? 'SUPPORT'
+                                      : 'TEACHING',
                               style: TextStyle(
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.w800,
-                                color: isHT ? const Color(0xFF92400E) : AppColors.primaryDark,
+                                color: isHT
+                                    ? const Color(0xFF92400E)
+                                    : isSupport
+                                        ? const Color(0xFF6B21A8)
+                                        : AppColors.primaryDark,
                               ),
                             ),
                           ),
@@ -1747,7 +1765,7 @@ class TeachersManagementSubPage extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
                   label: const Text(
-                    'Register New Teacher',
+                    'Register Staff Member (اسٹاف اندراج)',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
                   ),
                   onPressed: () => Get.to(() => const RegisterTeacherView()),

@@ -525,7 +525,7 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> with SingleTi
             ),
             child: const Center(
               child: Text(
-                'No teachers found in school directory.\nRegister staff in Faculty & Staff tab.',
+                'No staff members found in school directory.\nRegister teaching and non-teaching staff in Faculty & Staff tab.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),

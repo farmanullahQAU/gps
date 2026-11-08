@@ -36,11 +36,19 @@ class _RegisterTeacherViewState extends State<RegisterTeacherView> {
   static const List<String> _designationOptions = [
     'Primary School Teacher (PST)',
     'Senior Primary School Teacher (SPST)',
-    'Head Teacher / Incharge',
+    'Head Teacher / Incharge (PSHT)',
     'Certified Teacher (CT)',
-    'Drawing Master (DM)',
+    'Arabic Teacher (AT)',
+    'Theology Teacher (TT)',
     'Physical Education Teacher (PET)',
-    'Qari / Arabic Teacher (AT)',
+    'Drawing Master (DM)',
+    'Qari / Arabic Teacher',
+    'Class IV / Naib Qasid (نائب قاصد)',
+    'Chowkidar (چوکیدار)',
+    'Mali / Ground Staff (مالی)',
+    'Water Carrier / Sweeper (خاک روب)',
+    'School Administrator / Clerk',
+    'IT Incharge / Lab Assistant',
   ];
 
   static const List<String> _avatarPresets = [
@@ -325,7 +333,7 @@ class _RegisterTeacherViewState extends State<RegisterTeacherView> {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppBar(
-        title: const Text('Register New Teacher', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+        title: const Text('Register Staff Member', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0.5,
@@ -570,7 +578,7 @@ class _RegisterTeacherViewState extends State<RegisterTeacherView> {
                   icon: _isSaving
                       ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : const Icon(Icons.person_add_alt_1_rounded, size: 20),
-                  label: Text(_isSaving ? 'Registering...' : 'Register Teacher & Save Account', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  label: Text(_isSaving ? 'Registering...' : 'Register Staff & Save Account', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                 ),
               ),
 
