@@ -2432,9 +2432,8 @@ class PdfGeneratorService {
   // -------------------------------------------------------------
   // Report G: Official KPK Primary School Monthly Performance Goshwara
   // (ماہانہ گوشوارہ - Monthly School Performance & Staff Status Report)
-  // Clean, spacious, and official 2-Page Administrative Format:
-  // Page 1: Staff / Teacher Service Particulars (19 Columns, comfortable row height)
-  // Page 2: School Infrastructure, Sanctioned Posts, Student Enrollment, PTC Accounts & Official Signatures
+  // Dynamic pagination: Starts right from the top, includes all teachers across multiple pages if needed,
+  // and properly renders connected Urdu text using _urduText.
   // -------------------------------------------------------------
   static void _buildMonthlyGoshwaraReport({
     required pw.Document pdf,
@@ -2488,15 +2487,16 @@ class PdfGeneratorService {
     // Common Goshwara Header Component
     pw.Widget buildGoshwaraHeader(String pageSubtitle, int pageNum, int totalPages) {
       return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
               // Left Official Logo
               pw.Container(
-                width: 44,
-                height: 44,
-                padding: const pw.EdgeInsets.all(2),
+                width: 38,
+                height: 38,
+                padding: const pw.EdgeInsets.all(1.5),
                 child: _cachedKpesedLogo != null
                     ? pw.Image(_cachedKpesedLogo!, fit: pw.BoxFit.contain)
                     : pw.Container(
@@ -2505,7 +2505,7 @@ class PdfGeneratorService {
                           border: pw.Border.all(color: PdfColors.green900, width: 1),
                           borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
                         ),
-                        child: pw.Text('KPESED', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                        child: pw.Text('KPESED', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
                       ),
               ),
               pw.SizedBox(width: 8),
@@ -2517,7 +2517,7 @@ class PdfGeneratorService {
                       'ELEMENTARY & SECONDARY EDUCATION DEPARTMENT • GOVERNMENT OF KHYBER PAKHTUNKHWA',
                       textAlign: pw.TextAlign.center,
                       style: pw.TextStyle(
-                        fontSize: 9.5,
+                        fontSize: 9.0,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.green900,
                       ),
@@ -2527,18 +2527,18 @@ class PdfGeneratorService {
                       mainAxisAlignment: pw.MainAxisAlignment.center,
                       children: [
                         pw.Text(
-                          'MONTHLY SCHOOL PERFORMANCE REPORT (ماہانہ گوشوارہ) — ',
+                          'MONTHLY SCHOOL PERFORMANCE REPORT — ',
                           style: pw.TextStyle(
-                            fontSize: 9,
+                            fontSize: 8.8,
                             fontWeight: pw.FontWeight.bold,
                             color: PdfColors.green900,
                           ),
                         ),
-                        _urduText('ماہانہ گوشوارہ بابت ماہ ', fontSize: 8.8, color: PdfColors.green900),
+                        _urduText('ماہانہ گوشوارہ بابت ماہ ', fontSize: 8.5, color: PdfColors.green900),
                         pw.Text(
                           '$monthUrdu  •  $schoolFullName',
                           style: pw.TextStyle(
-                            fontSize: 9,
+                            fontSize: 8.8,
                             fontWeight: pw.FontWeight.bold,
                             color: PdfColors.green900,
                           ),
@@ -2548,7 +2548,7 @@ class PdfGeneratorService {
                     pw.SizedBox(height: 1.5),
                     pw.Text(
                       pageSubtitle,
-                      style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800),
+                      style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800),
                     ),
                   ],
                 ),
@@ -2556,9 +2556,9 @@ class PdfGeneratorService {
               pw.SizedBox(width: 8),
               // Right Official Emblem
               pw.Container(
-                width: 44,
-                height: 44,
-                padding: const pw.EdgeInsets.all(2),
+                width: 38,
+                height: 38,
+                padding: const pw.EdgeInsets.all(1.5),
                 child: _cachedKpkGovtLogo != null
                     ? pw.Image(_cachedKpkGovtLogo!, fit: pw.BoxFit.contain)
                     : pw.Container(
@@ -2567,187 +2567,248 @@ class PdfGeneratorService {
                           border: pw.Border.all(color: PdfColors.green900, width: 1),
                           shape: pw.BoxShape.circle,
                         ),
-                        child: pw.Text('KPK', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                        child: pw.Text('KPK', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
                       ),
               ),
             ],
           ),
-          pw.SizedBox(height: 4),
+          pw.SizedBox(height: 3),
           // Metadata Strip
           pw.Container(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
             decoration: pw.BoxDecoration(
               color: PdfColors.green50,
-              border: pw.Border.all(color: PdfColors.green800, width: 0.7),
+              border: pw.Border.all(color: PdfColors.green800, width: 0.6),
               borderRadius: const pw.BorderRadius.all(pw.Radius.circular(3)),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text('EMIS Code: ${school.code.isNotEmpty ? school.code : "-"}', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
-                pw.Text('LTRC / Center: ${schoolSettings.ltrcCenter.isNotEmpty ? schoolSettings.ltrcCenter : "-"}', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
-                pw.Text('Union Council: ${schoolSettings.unionCouncil.isNotEmpty ? schoolSettings.unionCouncil : "-"}', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
-                pw.Text('PK Constituency: ${schoolSettings.pkConstituency.isNotEmpty ? schoolSettings.pkConstituency : "PK-12"}', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
-                pw.Text('NA Constituency: ${schoolSettings.naConstituency.isNotEmpty ? schoolSettings.naConstituency : "NA-5"}', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
-                pw.Text('Page $pageNum of $totalPages', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                pw.Text('EMIS Code: ${school.code.isNotEmpty ? school.code : "-"}', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                pw.Text('LTRC / Center: ${schoolSettings.ltrcCenter.isNotEmpty ? schoolSettings.ltrcCenter : "-"}', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                pw.Text('Union Council: ${schoolSettings.unionCouncil.isNotEmpty ? schoolSettings.unionCouncil : "-"}', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                pw.Text('PK Constituency: ${schoolSettings.pkConstituency.isNotEmpty ? schoolSettings.pkConstituency : "PK-12"}', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                pw.Text('NA Constituency: ${schoolSettings.naConstituency.isNotEmpty ? schoolSettings.naConstituency : "NA-5"}', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                pw.Text('Page $pageNum of $totalPages', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
               ],
             ),
           ),
-          pw.SizedBox(height: 6),
+          pw.SizedBox(height: 4),
         ],
       );
     }
 
-    // =============================================================
-    // PAGE 1: TEACHER & STAFF PARTICULARS REGISTER (جدول اساتذہ و ملازمین)
-    // =============================================================
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        build: (context) {
-          return pw.Container(
-            padding: const pw.EdgeInsets.all(6),
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.green900, width: 1.5),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-              children: [
-                buildGoshwaraHeader('PART I: TEACHING & NON-TEACHING STAFF SERVICE PARTICULARS (کوائف اساتذہ کرام و ملازمین)', 1, 2),
-                pw.Expanded(
-                  child: pw.Table(
-                    border: pw.TableBorder.all(color: PdfColors.grey500, width: 0.5),
-                    columnWidths: const {
-                      0: pw.FlexColumnWidth(0.5), // S#
-                      1: pw.FlexColumnWidth(2.0), // Name
-                      2: pw.FlexColumnWidth(1.8), // Father
-                      3: pw.FlexColumnWidth(1.1), // Post
-                      4: pw.FlexColumnWidth(1.5), // Personal#
-                      5: pw.FlexColumnWidth(2.1), // CNIC
-                      6: pw.FlexColumnWidth(1.4), // DOB
-                      7: pw.FlexColumnWidth(1.3), // Acad Qual
-                      8: pw.FlexColumnWidth(1.4), // Prof Qual
-                      9: pw.FlexColumnWidth(1.4), // Appt Date
-                      10: pw.FlexColumnWidth(1.4), // School Date
-                      11: pw.FlexColumnWidth(0.8), // BPS
-                      12: pw.FlexColumnWidth(1.4), // Scale Date
-                      13: pw.FlexColumnWidth(1.4), // Basic Pay
-                      14: pw.FlexColumnWidth(1.0), // Type
-                      15: pw.FlexColumnWidth(1.6), // Village
-                      16: pw.FlexColumnWidth(1.3), // Tehsil
-                      17: pw.FlexColumnWidth(1.3), // District
-                      18: pw.FlexColumnWidth(1.7), // Phone
-                      19: pw.FlexColumnWidth(1.2), // Sign
-                    },
-                    children: [
-                      pw.TableRow(
-                        decoration: const pw.BoxDecoration(color: PdfColors.green900),
-                        children: [
-                          _goshwaraHeaderCell('S#\nنمبر'),
-                          _goshwaraHeaderCell('Name\nنام'),
-                          _goshwaraHeaderCell('Father\nولدیت'),
-                          _goshwaraHeaderCell('Post\nعہدہ'),
-                          _goshwaraHeaderCell('Personal#\nپرسنل نمبر'),
-                          _goshwaraHeaderCell('CNIC#\nشناختی کارڈ'),
-                          _goshwaraHeaderCell('DOB\nپیدائش'),
-                          _goshwaraHeaderCell('Acad\nتعلیم'),
-                          _goshwaraHeaderCell('Prof\nپیشہ ورانہ'),
-                          _goshwaraHeaderCell('Appt\nآغاز'),
-                          _goshwaraHeaderCell('School\nاسکول ہذا'),
-                          _goshwaraHeaderCell('BPS\nاسکیل'),
-                          _goshwaraHeaderCell('Scale Date\nتاریخ اسکیل'),
-                          _goshwaraHeaderCell('Pay (PKR)\nبنیادی تنخواہ'),
-                          _goshwaraHeaderCell('Type\nملازمت'),
-                          _goshwaraHeaderCell('Village\nگاؤں'),
-                          _goshwaraHeaderCell('Tehsil\nتحصیل'),
-                          _goshwaraHeaderCell('District\nضلع'),
-                          _goshwaraHeaderCell('Phone\nرابطہ'),
-                          _goshwaraHeaderCell('Sign\nدستخط'),
-                        ],
-                      ),
-                      ...goshwaraTeachers.take(14).map((t) {
-                        final sno = t['sno']?.toString() ?? '1';
-                        final name = t['name']?.toString() ?? '-';
-                        final father = t['father']?.toString() ?? '-';
-                        final post = t['post']?.toString() ?? 'PST';
-                        final personalNo = t['personal_no']?.toString() ?? '-';
-                        final cnic = t['cnic']?.toString() ?? '-';
-                        final dob = t['dob']?.toString() ?? '-';
-                        final acad = t['acad']?.toString() ?? '-';
-                        final prof = t['prof']?.toString() ?? '-';
-                        final appt = t['appt']?.toString() ?? '-';
-                        final schoolDate = t['school_date']?.toString() ?? '-';
-                        final bps = t['bps']?.toString() ?? '14';
-                        final scaleDate = t['scale_date']?.toString() ?? '-';
-                        final pay = t['pay']?.toString() ?? '-';
-                        final type = t['type']?.toString() ?? 'Perm';
-                        final village = t['village']?.toString() ?? '-';
-                        final tehsil = t['tehsil']?.toString() ?? schoolSettings.tehsil;
-                        final dist = t['district']?.toString() ?? schoolSettings.district;
-                        final phone = t['phone']?.toString() ?? '-';
+    // Helper for table header row
+    pw.TableRow buildTableHeaderRow() {
+      return pw.TableRow(
+        decoration: const pw.BoxDecoration(color: PdfColors.green900),
+        children: [
+          _goshwaraBilingualHeader('S#', 'نمبر'),
+          _goshwaraBilingualHeader('Name', 'نام'),
+          _goshwaraBilingualHeader('Father', 'ولدیت'),
+          _goshwaraBilingualHeader('Post', 'عہدہ'),
+          _goshwaraBilingualHeader('Personal#', 'پرسنل نمبر'),
+          _goshwaraBilingualHeader('CNIC#', 'شناختی کارڈ'),
+          _goshwaraBilingualHeader('DOB', 'پیدائش'),
+          _goshwaraBilingualHeader('Acad', 'تعلیم'),
+          _goshwaraBilingualHeader('Prof', 'پیشہ ورانہ'),
+          _goshwaraBilingualHeader('Appt', 'آغاز'),
+          _goshwaraBilingualHeader('School', 'اسکول ہذا'),
+          _goshwaraBilingualHeader('BPS', 'اسکیل'),
+          _goshwaraBilingualHeader('Scale Date', 'تاریخ اسکیل'),
+          _goshwaraBilingualHeader('Pay (PKR)', 'بنیادی تنخواہ'),
+          _goshwaraBilingualHeader('Type', 'ملازمت'),
+          _goshwaraBilingualHeader('Village', 'گاؤں'),
+          _goshwaraBilingualHeader('Tehsil', 'تحصیل'),
+          _goshwaraBilingualHeader('District', 'ضلع'),
+          _goshwaraBilingualHeader('Phone', 'رابطہ'),
+          _goshwaraBilingualHeader('Sign', 'دستخط'),
+        ],
+      );
+    }
 
-                        return pw.TableRow(
-                          children: [
-                            _goshwaraDataCell(sno, isCenter: true),
-                            _goshwaraDataCell(name, isBold: true),
-                            _goshwaraDataCell(father),
-                            _goshwaraDataCell(post, isCenter: true, isBold: true),
-                            _goshwaraDataCell(personalNo, isCenter: true),
-                            _goshwaraDataCell(cnic, isCenter: true),
-                            _goshwaraDataCell(dob, isCenter: true),
-                            _goshwaraDataCell(acad, isCenter: true),
-                            _goshwaraDataCell(prof, isCenter: true),
-                            _goshwaraDataCell(appt, isCenter: true),
-                            _goshwaraDataCell(schoolDate, isCenter: true),
-                            _goshwaraDataCell(bps, isCenter: true, isBold: true),
-                            _goshwaraDataCell(scaleDate, isCenter: true),
-                            _goshwaraDataCell(pay, isCenter: true),
-                            _goshwaraDataCell(type, isCenter: true),
-                            _goshwaraDataCell(village),
-                            _goshwaraDataCell(tehsil),
-                            _goshwaraDataCell(dist),
-                            _goshwaraDataCell(phone, isCenter: true),
-                            _goshwaraDataCell('____', isCenter: true),
-                          ],
-                        );
-                      }),
+    const tableColumnWidths = {
+      0: pw.FlexColumnWidth(0.5), // S#
+      1: pw.FlexColumnWidth(2.0), // Name
+      2: pw.FlexColumnWidth(1.8), // Father
+      3: pw.FlexColumnWidth(1.1), // Post
+      4: pw.FlexColumnWidth(1.5), // Personal#
+      5: pw.FlexColumnWidth(2.1), // CNIC
+      6: pw.FlexColumnWidth(1.4), // DOB
+      7: pw.FlexColumnWidth(1.3), // Acad Qual
+      8: pw.FlexColumnWidth(1.4), // Prof Qual
+      9: pw.FlexColumnWidth(1.4), // Appt Date
+      10: pw.FlexColumnWidth(1.4), // School Date
+      11: pw.FlexColumnWidth(0.8), // BPS
+      12: pw.FlexColumnWidth(1.4), // Scale Date
+      13: pw.FlexColumnWidth(1.4), // Basic Pay
+      14: pw.FlexColumnWidth(1.0), // Type
+      15: pw.FlexColumnWidth(1.6), // Village
+      16: pw.FlexColumnWidth(1.3), // Tehsil
+      17: pw.FlexColumnWidth(1.3), // District
+      18: pw.FlexColumnWidth(1.7), // Phone
+      19: pw.FlexColumnWidth(1.1), // Sign
+    };
+
+    pw.TableRow buildTeacherDataRow(Map<String, dynamic> t) {
+      final sno = t['sno']?.toString() ?? '1';
+      final name = t['name']?.toString() ?? '-';
+      final father = t['father']?.toString() ?? '-';
+      final post = t['post']?.toString() ?? 'PST';
+      final personalNo = t['personal_no']?.toString() ?? '-';
+      final cnic = t['cnic']?.toString() ?? '-';
+      final dob = t['dob']?.toString() ?? '-';
+      final acad = t['acad']?.toString() ?? '-';
+      final prof = t['prof']?.toString() ?? '-';
+      final appt = t['appt']?.toString() ?? '-';
+      final schoolDate = t['school_date']?.toString() ?? '-';
+      final bps = t['bps']?.toString() ?? '14';
+      final scaleDate = t['scale_date']?.toString() ?? '-';
+      final pay = t['pay']?.toString() ?? '-';
+      final type = t['type']?.toString() ?? 'Perm';
+      final village = t['village']?.toString() ?? '-';
+      final tehsil = t['tehsil']?.toString() ?? schoolSettings.tehsil;
+      final dist = t['district']?.toString() ?? schoolSettings.district;
+      final phone = t['phone']?.toString() ?? '-';
+
+      return pw.TableRow(
+        children: [
+          _goshwaraDataCell(sno, isCenter: true),
+          _goshwaraDataCell(name, isBold: true),
+          _goshwaraDataCell(father),
+          _goshwaraDataCell(post, isCenter: true, isBold: true),
+          _goshwaraDataCell(personalNo, isCenter: true),
+          _goshwaraDataCell(cnic, isCenter: true),
+          _goshwaraDataCell(dob, isCenter: true),
+          _goshwaraDataCell(acad, isCenter: true),
+          _goshwaraDataCell(prof, isCenter: true),
+          _goshwaraDataCell(appt, isCenter: true),
+          _goshwaraDataCell(schoolDate, isCenter: true),
+          _goshwaraDataCell(bps, isCenter: true, isBold: true),
+          _goshwaraDataCell(scaleDate, isCenter: true),
+          _goshwaraDataCell(pay, isCenter: true),
+          _goshwaraDataCell(type, isCenter: true),
+          _goshwaraDataCell(village),
+          _goshwaraDataCell(tehsil),
+          _goshwaraDataCell(dist),
+          _goshwaraDataCell(phone, isCenter: true),
+          _goshwaraDataCell('____', isCenter: true),
+        ],
+      );
+    }
+
+    // Dynamic Chunking for Staff: Up to 15 teachers per page
+    const int teachersPerPage = 15;
+    final staffList = goshwaraTeachers.isNotEmpty
+        ? goshwaraTeachers
+        : [
+            {
+              'sno': 1,
+              'name': headTeacherName ?? schoolSettings.headTeacherName,
+              'father': '-',
+              'post': 'PSHT',
+              'personal_no': '-',
+              'cnic': '-',
+              'dob': '-',
+              'acad': 'M.A',
+              'prof': 'B.Ed',
+              'appt': '-',
+              'school_date': '-',
+              'bps': '15',
+              'scale_date': '-',
+              'pay': '-',
+              'type': 'Perm',
+              'village': '-',
+              'tehsil': schoolSettings.tehsil,
+              'district': schoolSettings.district,
+              'phone': '-',
+            }
+          ];
+
+    final staffChunks = <List<Map<String, dynamic>>>[];
+    for (int i = 0; i < staffList.length; i += teachersPerPage) {
+      staffChunks.add(staffList.sublist(i, (i + teachersPerPage > staffList.length) ? staffList.length : i + teachersPerPage));
+    }
+
+    final totalPages = staffChunks.length + 1; // Staff pages + 1 final Infrastructure/Attestation page
+
+    // Render Staff Pages starting right from the top
+    for (int pIdx = 0; pIdx < staffChunks.length; pIdx++) {
+      final chunk = staffChunks[pIdx];
+      final pageNum = pIdx + 1;
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4.landscape,
+          margin: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          build: (context) {
+            return pw.Container(
+              padding: const pw.EdgeInsets.all(5),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.green900, width: 1.4),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                mainAxisAlignment: pw.MainAxisAlignment.start,
+                children: [
+                  buildGoshwaraHeader(
+                    staffChunks.length == 1
+                        ? 'PART I: TEACHING & NON-TEACHING STAFF SERVICE PARTICULARS (کوائف اساتذہ کرام و ملازمین)'
+                        : 'PART I: TEACHING & NON-TEACHING STAFF PARTICULARS (کوائف اساتذہ کرام) — SHEET $pageNum OF ${staffChunks.length}',
+                    pageNum,
+                    totalPages,
+                  ),
+                  pw.Table(
+                    border: pw.TableBorder.all(color: PdfColors.grey500, width: 0.5),
+                    columnWidths: tableColumnWidths,
+                    children: [
+                      buildTableHeaderRow(),
+                      ...chunk.map(buildTeacherDataRow),
                     ],
                   ),
-                ),
-                pw.SizedBox(height: 6),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('Report Month: $monthUrdu', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
-                    pw.Text('Note: Continued on Page 2 for Facilities, Enrollment, PTC Funds & Verification Signatures', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
-                    pw.Text('Govt of Khyber Pakhtunkhwa • E&SED Official Goshwara Register', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+                  pw.Spacer(),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.only(top: 3),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text('Report Month: $monthUrdu', style: const pw.TextStyle(fontSize: 7.2, color: PdfColors.grey700)),
+                        pw.Text('Note: Continued on Page $totalPages for School Infrastructure, Enrollment, PTC Funds & Official Attestation', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold, color: PdfColors.green900)),
+                        pw.Text('Govt of Khyber Pakhtunkhwa • E&SED Official Goshwara Register', style: const pw.TextStyle(fontSize: 7.2, color: PdfColors.grey700)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
 
     // =============================================================
-    // PAGE 2: FACILITIES, POSTS, ENROLLMENT, PTC FUNDS & OFFICIAL STAMPS
+    // FINAL PAGE: FACILITIES, POSTS, ENROLLMENT, PTC FUNDS & OFFICIAL STAMPS
+    // Starts right from the top with clean, spacious layout
     // =============================================================
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         build: (context) {
           return pw.Container(
-            padding: const pw.EdgeInsets.all(6),
+            padding: const pw.EdgeInsets.all(5),
             decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.green900, width: 1.5),
+              border: pw.Border.all(color: PdfColors.green900, width: 1.4),
             ),
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              mainAxisAlignment: pw.MainAxisAlignment.start,
               children: [
-                buildGoshwaraHeader('PART II: SCHOOL INFRASTRUCTURE, ENROLLMENT, PTC ACCOUNTS & ATTESTATION (وسائل، انرولمنٹ و اخراجات)', 2, 2),
+                buildGoshwaraHeader(
+                  'PART II: SCHOOL INFRASTRUCTURE, ENROLLMENT, PTC ACCOUNTS & ATTESTATION (وسائل، انرولمنٹ و اخراجات)',
+                  totalPages,
+                  totalPages,
+                ),
                 // Panel Row 1: Facilities | Staff Posts | Building Info
                 pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -2764,11 +2825,14 @@ class PdfGeneratorService {
                           children: [
                             pw.Container(
                               color: const PdfColor.fromInt(0xFFFEF08A),
-                              padding: const pw.EdgeInsets.symmetric(vertical: 3),
+                              padding: const pw.EdgeInsets.symmetric(vertical: 2.5),
                               alignment: pw.Alignment.center,
-                              child: pw.Text(
-                                'SCHOOL RESOURCES & FACILITIES (وسائل اور سہولیات)',
-                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                              child: pw.Row(
+                                mainAxisAlignment: pw.MainAxisAlignment.center,
+                                children: [
+                                  pw.Text('SCHOOL FACILITIES ', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                                  _urduParen('وسائل اور سہولیات', fontSize: 7.2),
+                                ],
                               ),
                             ),
                             pw.Table(
@@ -2776,14 +2840,14 @@ class PdfGeneratorService {
                               children: [
                                 pw.TableRow(
                                   children: [
-                                    _miniHeader('Elect.\nبجلی'),
-                                    _miniHeader('Pipe\nپائپ'),
-                                    _miniHeader('Well\nکنواں'),
-                                    _miniHeader('Solar\nسولر'),
-                                    _miniHeader('Wall\nدیوار'),
-                                    _miniHeader('Play\nایریا'),
-                                    _miniHeader('Office\nدفتر'),
-                                    _miniHeader('Toilets\nلیٹرین'),
+                                    _bilingualMiniHeader('Elect.', 'بجلی'),
+                                    _bilingualMiniHeader('Pipe', 'پائپ'),
+                                    _bilingualMiniHeader('Well', 'کنواں'),
+                                    _bilingualMiniHeader('Solar', 'سولر'),
+                                    _bilingualMiniHeader('Wall', 'دیوار'),
+                                    _bilingualMiniHeader('Play', 'ایریا'),
+                                    _bilingualMiniHeader('Office', 'دفتر'),
+                                    _bilingualMiniHeader('Toilets', 'لیٹرین'),
                                   ],
                                 ),
                                 pw.TableRow(
@@ -2818,11 +2882,14 @@ class PdfGeneratorService {
                           children: [
                             pw.Container(
                               color: const PdfColor.fromInt(0xFFFEF08A),
-                              padding: const pw.EdgeInsets.symmetric(vertical: 3),
+                              padding: const pw.EdgeInsets.symmetric(vertical: 2.5),
                               alignment: pw.Alignment.center,
-                              child: pw.Text(
-                                'STAFF POSTS & VACANCIES (اسکول اسٹاف معلومات)',
-                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                              child: pw.Row(
+                                mainAxisAlignment: pw.MainAxisAlignment.center,
+                                children: [
+                                  pw.Text('STAFF POSTS & VACANCIES ', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                                  _urduParen('اسکول اسٹاف معلومات', fontSize: 7.2),
+                                ],
                               ),
                             ),
                             pw.Table(
@@ -2830,12 +2897,12 @@ class PdfGeneratorService {
                               children: [
                                 pw.TableRow(
                                   children: [
-                                    _miniHeader('Total\nکل اسامیاں'),
-                                    _miniHeader('PSHT\nہیڈ'),
-                                    _miniHeader('SPST\nسینئر'),
-                                    _miniHeader('PST\nپی ایس ٹی'),
-                                    _miniHeader('Vacant\nخالی اسامیاں'),
-                                    _miniHeader('Chowkidar\nچوکیدار'),
+                                    _bilingualMiniHeader('Total', 'کل'),
+                                    _bilingualMiniHeader('PSHT', 'ہیڈ'),
+                                    _bilingualMiniHeader('SPST', 'سینئر'),
+                                    _bilingualMiniHeader('PST', 'پی ایس ٹی'),
+                                    _bilingualMiniHeader('Vacant', 'خالی'),
+                                    _bilingualMiniHeader('Chowkidar', 'چوکیدار'),
                                   ],
                                 ),
                                 pw.TableRow(
@@ -2868,11 +2935,14 @@ class PdfGeneratorService {
                           children: [
                             pw.Container(
                               color: const PdfColor.fromInt(0xFFFEF08A),
-                              padding: const pw.EdgeInsets.symmetric(vertical: 3),
+                              padding: const pw.EdgeInsets.symmetric(vertical: 2.5),
                               alignment: pw.Alignment.center,
-                              child: pw.Text(
-                                'BUILDING INFO (اسکول عمارت)',
-                                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                              child: pw.Row(
+                                mainAxisAlignment: pw.MainAxisAlignment.center,
+                                children: [
+                                  pw.Text('BUILDING INFO ', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                                  _urduParen('اسکول عمارت', fontSize: 7.2),
+                                ],
                               ),
                             ),
                             pw.Table(
@@ -2880,10 +2950,10 @@ class PdfGeneratorService {
                               children: [
                                 pw.TableRow(
                                   children: [
-                                    _miniHeader('Est.\nاجراء'),
-                                    _miniHeader('Const.\nتعمیر'),
-                                    _miniHeader('Class Rms\nتدریسی کمرے'),
-                                    _miniHeader('Other\nدیگر کمرے'),
+                                    _bilingualMiniHeader('Est.', 'اجراء'),
+                                    _bilingualMiniHeader('Const.', 'تعمیر'),
+                                    _bilingualMiniHeader('Class Rms', 'تدریسی'),
+                                    _bilingualMiniHeader('Other', 'دیگر'),
                                   ],
                                 ),
                                 pw.TableRow(
@@ -2902,7 +2972,7 @@ class PdfGeneratorService {
                     ),
                   ],
                 ),
-                pw.SizedBox(height: 8),
+                pw.SizedBox(height: 6),
 
                 // Panel Row 2: Student Enrollment | PTC Account & Construction Funds
                 pw.Expanded(
@@ -2921,11 +2991,14 @@ class PdfGeneratorService {
                             children: [
                               pw.Container(
                                 color: const PdfColor.fromInt(0xFFFEF08A),
-                                padding: const pw.EdgeInsets.symmetric(vertical: 3),
+                                padding: const pw.EdgeInsets.symmetric(vertical: 2.5),
                                 alignment: pw.Alignment.center,
-                                child: pw.Text(
-                                  'STUDENTS ENROLLMENT (اسٹوڈنٹس انرولمنٹ)',
-                                  style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                                child: pw.Row(
+                                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                                  children: [
+                                    pw.Text('STUDENTS ENROLLMENT ', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                                    _urduParen('اسٹوڈنٹس انرولمنٹ', fontSize: 7.2),
+                                  ],
                                 ),
                               ),
                               pw.Table(
@@ -2980,11 +3053,14 @@ class PdfGeneratorService {
                                 children: [
                                   pw.Container(
                                     color: const PdfColor.fromInt(0xFFFEF08A),
-                                    padding: const pw.EdgeInsets.symmetric(vertical: 3),
+                                    padding: const pw.EdgeInsets.symmetric(vertical: 2.5),
                                     alignment: pw.Alignment.center,
-                                    child: pw.Text(
-                                      'PARENT TEACHER COUNCIL (PTC) & FUNDS (پیرنٹ ٹیچر کونسل معلومات و اخراجات)',
-                                      style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
+                                    child: pw.Row(
+                                      mainAxisAlignment: pw.MainAxisAlignment.center,
+                                      children: [
+                                        pw.Text('PARENT TEACHER COUNCIL (PTC) & FUNDS ', style: pw.TextStyle(fontSize: 7.2, fontWeight: pw.FontWeight.bold)),
+                                        _urduParen('پیرنٹ ٹیچر کونسل معلومات و اخراجات', fontSize: 7.2),
+                                      ],
                                     ),
                                   ),
                                   pw.Table(
@@ -2992,13 +3068,13 @@ class PdfGeneratorService {
                                     children: [
                                       pw.TableRow(
                                         children: [
-                                          _miniHeader('Chairman\nچیئرمین'),
-                                          _miniHeader('Bank\nبینک'),
-                                          _miniHeader('A/C #\nاکاؤنٹ نمبر'),
-                                          _miniHeader('Sanction Date\nتاریخ اجراء'),
-                                          _miniHeader('Total Budget\nکل فنڈ (PKR)'),
-                                          _miniHeader('Total Spent\nخرچ شدہ (PKR)'),
-                                          _miniHeader('Balance\nبقایا رقم (PKR)'),
+                                          _bilingualMiniHeader('Chairman', 'چیئرمین'),
+                                          _bilingualMiniHeader('Bank', 'بینک'),
+                                          _bilingualMiniHeader('A/C #', 'اکاؤنٹ نمبر'),
+                                          _bilingualMiniHeader('Sanction Date', 'تاریخ اجراء'),
+                                          _bilingualMiniHeader('Total Budget', 'کل فنڈ (PKR)'),
+                                          _bilingualMiniHeader('Total Spent', 'خرچ شدہ (PKR)'),
+                                          _bilingualMiniHeader('Balance', 'بقایا رقم (PKR)'),
                                         ],
                                       ),
                                       pw.TableRow(
@@ -3017,11 +3093,11 @@ class PdfGeneratorService {
                                 ],
                               ),
                             ),
-                            pw.SizedBox(height: 12),
+                            pw.SizedBox(height: 10),
 
                             // Official Certification & Attestation Strip
                             pw.Container(
-                              padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                               decoration: pw.BoxDecoration(
                                 border: pw.Border.all(color: PdfColors.green800, width: 0.9),
                                 borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
@@ -3037,45 +3113,45 @@ class PdfGeneratorService {
                                         children: [
                                           pw.Text(
                                             'Goshwara No: ${schoolSettings.goshwaraNo.isNotEmpty ? schoolSettings.goshwaraNo : "01"}',
-                                            style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.green900),
+                                            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.green900),
                                           ),
-                                          pw.SizedBox(height: 3),
+                                          pw.SizedBox(height: 2),
                                           pw.Text(
                                             'Generated: ${DateFormat('dd-MM-yyyy').format(DateTime.now())}',
-                                            style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
+                                            style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700),
                                           ),
                                         ],
                                       ),
                                       pw.Column(
                                         children: [
-                                          pw.Container(width: 120, height: 1, color: PdfColors.grey700),
-                                          pw.SizedBox(height: 4),
+                                          pw.Container(width: 110, height: 1, color: PdfColors.grey700),
+                                          pw.SizedBox(height: 3),
                                           pw.Text(
                                             'Head Teacher / Incharge\n(${headTeacherName ?? schoolSettings.headTeacherName})',
                                             textAlign: pw.TextAlign.center,
-                                            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                                            style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
                                           ),
                                         ],
                                       ),
                                       pw.Column(
                                         children: [
-                                          pw.Container(width: 120, height: 1, color: PdfColors.grey700),
-                                          pw.SizedBox(height: 4),
+                                          pw.Container(width: 110, height: 1, color: PdfColors.grey700),
+                                          pw.SizedBox(height: 3),
                                           pw.Text(
                                             'Center Incharge / LTRC\n(${schoolSettings.centerInchargeName.isNotEmpty ? schoolSettings.centerInchargeName : "Center Incharge"})',
                                             textAlign: pw.TextAlign.center,
-                                            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                                            style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
                                           ),
                                         ],
                                       ),
                                       pw.Column(
                                         children: [
-                                          pw.Container(width: 120, height: 1, color: PdfColors.grey700),
-                                          pw.SizedBox(height: 4),
+                                          pw.Container(width: 110, height: 1, color: PdfColors.grey700),
+                                          pw.SizedBox(height: 3),
                                           pw.Text(
                                             'Circle SDEO / ASDEO\n(${schoolSettings.circleSdeoName.isNotEmpty ? schoolSettings.circleSdeoName : "SDEO Office"})',
                                             textAlign: pw.TextAlign.center,
-                                            style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                                            style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
                                           ),
                                         ],
                                       ),
@@ -3098,25 +3174,56 @@ class PdfGeneratorService {
     );
   }
 
-  static pw.Widget _goshwaraHeaderCell(String text) {
+  /// Bilingual header cell for main Goshwara table with shaped Urdu text
+  static pw.Widget _goshwaraBilingualHeader(String english, String urdu) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 2.5, vertical: 3.5),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 2.0, vertical: 3.0),
       alignment: pw.Alignment.center,
-      child: pw.Text(
-        text,
-        textAlign: pw.TextAlign.center,
-        style: pw.TextStyle(
-          fontSize: 6.2,
-          fontWeight: pw.FontWeight.bold,
-          color: PdfColors.white,
-        ),
+      child: pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.Text(
+            english,
+            textAlign: pw.TextAlign.center,
+            style: pw.TextStyle(
+              fontSize: 6.2,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.white,
+            ),
+          ),
+          pw.SizedBox(height: 1.5),
+          _urduText(urdu, fontSize: 5.8, color: PdfColors.white),
+        ],
+      ),
+    );
+  }
+
+  /// Bilingual mini header cell for panel tables with shaped Urdu text
+  static pw.Widget _bilingualMiniHeader(String english, String urdu) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
+      alignment: pw.Alignment.center,
+      color: PdfColors.grey100,
+      child: pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.Text(
+            english,
+            textAlign: pw.TextAlign.center,
+            style: pw.TextStyle(fontSize: 5.6, fontWeight: pw.FontWeight.bold, color: PdfColors.black),
+          ),
+          pw.SizedBox(height: 1.0),
+          _urduText(urdu, fontSize: 5.2, color: PdfColors.grey800),
+        ],
       ),
     );
   }
 
   static pw.Widget _goshwaraDataCell(String text, {bool isCenter = false, bool isBold = false}) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 2.5, vertical: 3.0),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.6),
       alignment: isCenter ? pw.Alignment.center : pw.Alignment.centerLeft,
       child: pw.Text(
         text,
@@ -3131,40 +3238,27 @@ class PdfGeneratorService {
     );
   }
 
-  static pw.Widget _miniHeader(String text) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.5),
-      alignment: pw.Alignment.center,
-      color: PdfColors.grey100,
-      child: pw.Text(
-        text,
-        textAlign: pw.TextAlign.center,
-        style: pw.TextStyle(fontSize: 6.0, fontWeight: pw.FontWeight.bold),
-      ),
-    );
-  }
-
   static pw.Widget _whiteMiniHeader(String text) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.5),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.0),
       alignment: pw.Alignment.center,
       child: pw.Text(
         text,
         textAlign: pw.TextAlign.center,
-        style: pw.TextStyle(fontSize: 6.0, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+        style: pw.TextStyle(fontSize: 5.8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
       ),
     );
   }
 
   static pw.Widget _miniCell(String text, {bool isBold = false}) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.5),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 2.5, vertical: 2.0),
       alignment: pw.Alignment.center,
       child: pw.Text(
         text,
         textAlign: pw.TextAlign.center,
         style: pw.TextStyle(
-          fontSize: 6.5,
+          fontSize: 6.2,
           fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
         ),
       ),
@@ -3173,12 +3267,12 @@ class PdfGeneratorService {
 
   static pw.Widget _cellText(String text, {bool isBold = false}) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 2.5),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 2.0),
       alignment: pw.Alignment.centerLeft,
       child: pw.Text(
         text,
         style: pw.TextStyle(
-          fontSize: 6.2,
+          fontSize: 6.0,
           fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
         ),
       ),

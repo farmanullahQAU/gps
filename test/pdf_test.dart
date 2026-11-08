@@ -257,6 +257,9 @@ void main() {
       customConduct: 'EXCELLENT / GOOD',
       isDuplicateSlc: false,
     );
+    expect(bytesSlc.isNotEmpty, true);
+    expect(bytesSlc.length > 5000, true);
+
     // 7. Test Official KPK Primary School Monthly Performance Goshwara (ماہانہ گوشوارہ)
     final bytesGoshwara = await PdfGeneratorService.generateReport(
       type: ReportType.monthlyGoshwara,
