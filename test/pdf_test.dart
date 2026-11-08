@@ -310,6 +310,47 @@ void main() {
     );
     expect(bytesGoshwara.isNotEmpty, true);
     expect(bytesGoshwara.length > 5000, true);
+
+    // 8. Test Multi-Teacher KPK Primary School Goshwara (> 6 teachers triggers multi-page layout)
+    final multiTeachers = List.generate(
+      10,
+      (i) => {
+        'sno': i + 1,
+        'name': 'Teacher ${i + 1}',
+        'father': 'Father ${i + 1}',
+        'post': i == 0 ? 'PSHT' : 'PST',
+        'personal_no': '0012489$i',
+        'cnic': '15302-123456$i-1',
+        'dob': '15-04-1988',
+        'acad': 'M.A',
+        'prof': 'B.Ed',
+        'appt': '01-09-2012',
+        'school_date': '15-08-2018',
+        'bps': i == 0 ? '15' : '14',
+        'scale_date': '01-07-2016',
+        'pay': '68,500',
+        'type': 'Perm',
+        'village': 'Gulbahar',
+        'tehsil': 'Peshawar City',
+        'district': 'Peshawar',
+        'phone': '0300-123456$i',
+      },
+    );
+
+    final bytesMultiGoshwara = await PdfGeneratorService.generateReport(
+      type: ReportType.monthlyGoshwara,
+      school: school,
+      schoolClass: schoolClass,
+      section: section,
+      students: students,
+      attendanceRecords: records,
+      holidays: [],
+      startDate: startDate,
+      endDate: endDate,
+      goshwaraTeachers: multiTeachers,
+    );
+    expect(bytesMultiGoshwara.isNotEmpty, true);
+    expect(bytesMultiGoshwara.length > bytesGoshwara.length, true);
   });
 }
 
