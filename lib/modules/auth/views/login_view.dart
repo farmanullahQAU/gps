@@ -148,15 +148,15 @@ class _LoginViewState extends State<LoginView> {
             controller: _loginIdentifierCtrl,
             keyboardType: TextInputType.text,
             decoration: InputDecoration(
-              labelText: 'Email Address or CNIC Number',
-              hintText: 'e.g. 17301-XXXXXXX-X or teacher@school.edu.pk',
+              labelText: 'Email or CNIC',
+              hintText: 'Email or CNIC',
               prefixIcon: const Icon(Icons.person_pin_rounded, color: AppColors.primary, size: 20),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               isDense: true,
             ),
             validator: (v) {
               if (v == null || v.trim().isEmpty) {
-                return 'Please enter your Email Address or CNIC Number';
+                return 'Please enter your Email or CNIC';
               }
               final val = v.trim();
               final isEmail = val.contains('@');
@@ -181,7 +181,7 @@ class _LoginViewState extends State<LoginView> {
             obscureText: _obscurePassword,
             decoration: InputDecoration(
               labelText: 'Password',
-              hintText: 'Enter your account password',
+              hintText: 'Password',
               prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 20),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -864,8 +864,8 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
             keyboardType: TextInputType.emailAddress,
             style: const TextStyle(fontSize: 13),
             decoration: InputDecoration(
-              labelText: 'Registered Email *',
-              hintText: 'e.g. teacher@school.edu.pk',
+              labelText: 'Email *',
+              hintText: 'Email address',
               labelStyle: const TextStyle(fontSize: 12.5),
               prefixIcon: const Icon(Icons.email_outlined, size: 18, color: AppColors.primary),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -976,7 +976,7 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 6),
             decoration: InputDecoration(
-              labelText: '6-Digit Verification Code *',
+              labelText: '6-Digit Code *',
               hintText: '• • • • • •',
               counterText: '',
               prefixIcon: const Icon(Icons.security_rounded, size: 18, color: AppColors.primary),
@@ -1018,7 +1018,7 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
             style: const TextStyle(fontSize: 13),
             decoration: InputDecoration(
               labelText: 'New Password *',
-              hintText: 'Min 6 characters',
+              hintText: 'Min 6 chars',
               prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, color: AppColors.primary),
               suffixIcon: IconButton(
                 icon: Icon(_obscureNewPass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 16),
@@ -1036,7 +1036,8 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
             obscureText: _obscureConfirmPass,
             style: const TextStyle(fontSize: 13),
             decoration: InputDecoration(
-              labelText: 'Confirm New Password *',
+              labelText: 'Confirm Password *',
+              hintText: 'Confirm',
               prefixIcon: const Icon(Icons.lock_clock_outlined, size: 18, color: AppColors.primary),
               suffixIcon: IconButton(
                 icon: Icon(_obscureConfirmPass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 16),
@@ -1091,8 +1092,8 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
             keyboardType: TextInputType.text,
             style: const TextStyle(fontSize: 13),
             decoration: InputDecoration(
-              labelText: 'CNIC Number *',
-              hintText: 'e.g. 17301-XXXXXXX-X',
+              labelText: 'CNIC *',
+              hintText: 'CNIC number',
               prefixIcon: const Icon(Icons.badge_outlined, size: 18, color: AppColors.primary),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1113,8 +1114,8 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
             obscureText: _obscureCurrentPin,
             style: const TextStyle(fontSize: 13),
             decoration: InputDecoration(
-              labelText: 'Current 4-Digit Security PIN *',
-              hintText: 'Default 1234 or your active PIN',
+              labelText: '4-Digit PIN *',
+              hintText: '4-digit PIN',
               counterText: '',
               prefixIcon: const Icon(Icons.pin_outlined, size: 18, color: AppColors.primary),
               suffixIcon: IconButton(
@@ -1134,7 +1135,7 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
             style: const TextStyle(fontSize: 13),
             decoration: InputDecoration(
               labelText: 'New Password *',
-              hintText: 'Min 6 characters',
+              hintText: 'Min 6 chars',
               prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, color: AppColors.primary),
               suffixIcon: IconButton(
                 icon: Icon(_obscureCnicNewPass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 16),

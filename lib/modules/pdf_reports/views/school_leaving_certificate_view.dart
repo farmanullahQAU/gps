@@ -152,54 +152,12 @@ class _SchoolLeavingCertificateViewState extends State<SchoolLeavingCertificateV
     _reportCtrl.isDuplicateSlc.value = _isDuplicate;
   }
 
-  Future<void> _pickStudentDob() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDob,
-      firstDate: DateTime(2005),
-      lastDate: DateTime.now(),
-      helpText: 'Select Student Date of Birth',
-    );
-    if (picked != null && _activeStudent != null) {
-      final isoDob = DateFormat('yyyy-MM-dd').format(picked);
-      final updatedStudent = _activeStudent!.copyWith(
-        dateOfBirth: Value(isoDob),
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-      );
-      await _reportCtrl.studentRepository.db
-          .update(_reportCtrl.studentRepository.db.students)
-          .replace(updatedStudent);
-      if (!mounted) return;
-      setState(() {
-        _selectedDob = picked;
-        _activeStudent = updatedStudent;
-        final idx = _classStudents.indexWhere((st) => st.id == updatedStudent.id);
-        if (idx >= 0) _classStudents[idx] = updatedStudent;
-      });
-      _reportCtrl.selectedStudent.value = updatedStudent;
-      _syncOverridesToController();
-    }
-  }
-
   Future<void> _saveSlcMetadata({bool showToast = true}) async {
     final s = _activeStudent;
     if (s == null) return;
     setState(() => _isSaving = true);
     try {
       _syncOverridesToController();
-
-      final isoDob = DateFormat('yyyy-MM-dd').format(_selectedDob);
-      if (isoDob != s.dateOfBirth) {
-        final updatedStudent = s.copyWith(
-          dateOfBirth: Value(isoDob),
-          updatedAt: DateTime.now().millisecondsSinceEpoch,
-        );
-        await _reportCtrl.studentRepository.db
-            .update(_reportCtrl.studentRepository.db.students)
-            .replace(updatedStudent);
-        _activeStudent = updatedStudent;
-        _reportCtrl.selectedStudent.value = updatedStudent;
-      }
 
       final existing = await _reportCtrl.studentRepository.getExtendedInfo(s.id);
       final updated = StudentExtendedInfoModel(
@@ -561,61 +519,84 @@ class _SchoolLeavingCertificateViewState extends State<SchoolLeavingCertificateV
           ),
           const SizedBox(height: 8),
 
-          // Date of Birth (Figures & Words via intl) + Form-B Summary Strip
-          InkWell(
-            onTap: _pickStudentDob,
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFBBF7D0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+          // Date of Birth (Figures & Words via intl) — Official Master Record (Read-Only)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFBBF7D0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
                         children: [
                           const Icon(Icons.cake_outlined, size: 15, color: Color(0xFF166534)),
                           const SizedBox(width: 6),
-                          Text(
-                            'DOB (تاریخ پیدائش):  $_dobFiguresStr',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF14532D),
+                          Expanded(
+                            child: Text(
+                              'DOB (تاریخ پیدائش):  $_dobFiguresStr',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF14532D),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      if (_activeBForm.isNotEmpty)
-                        Text(
+                    ),
+                    if (_activeBForm.isNotEmpty)
+                      Flexible(
+                        child: Text(
                           'Form-B: $_activeBForm',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF166534),
                           ),
-                        )
-                      else
-                        const Icon(Icons.edit_calendar_rounded, size: 15, color: Color(0xFF166534)),
-                    ],
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.lock_outline_rounded, size: 11, color: Color(0xFF166534)),
+                            SizedBox(width: 3),
+                            Text(
+                              'Master Record',
+                              style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF166534)),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'In Words (لفظوں میں):  $_dobWordsStr',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF166534),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'In Words (لفظوں میں):  $_dobWordsStr',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF166534),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],

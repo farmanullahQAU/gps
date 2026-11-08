@@ -190,7 +190,7 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
                           textCapitalization: TextCapitalization.words,
                           decoration: _inputDeco(
                             label: 'School Name *',
-                            hint: 'e.g. Beaconhouse or City School',
+                            hint: 'School name',
                             icon: Icons.domain_rounded,
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter school name' : null,
@@ -206,7 +206,7 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
                                 textCapitalization: TextCapitalization.characters,
                                 decoration: _inputDeco(
                                   label: 'School Code *',
-                                  hint: 'e.g. SCH-101',
+                                  hint: 'EMIS / Code',
                                   icon: Icons.tag_rounded,
                                 ),
                                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter code' : null,
@@ -218,7 +218,7 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
                               child: TextFormField(
                                 controller: _districtCtrl,
                                 decoration: _inputDeco(
-                                  label: 'City / District *',
+                                  label: 'District *',
                                   hint: 'Peshawar',
                                   icon: Icons.location_city_rounded,
                                 ),
@@ -232,8 +232,8 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
                         TextFormField(
                           controller: _tehsilCtrl,
                           decoration: _inputDeco(
-                            label: 'Area / Campus *',
-                            hint: 'Main Campus',
+                            label: 'Area / Tehsil *',
+                            hint: 'Tehsil / Area',
                             icon: Icons.location_on_outlined,
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
@@ -250,7 +250,7 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
                           textCapitalization: TextCapitalization.words,
                           decoration: _inputDeco(
                             label: 'Head Teacher Name *',
-                            hint: 'e.g. Tariq Mehmood Khan',
+                            hint: 'Full name',
                             icon: Icons.badge_outlined,
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter name' : null,
@@ -264,7 +264,7 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
                                 controller: _phoneCtrl,
                                 keyboardType: TextInputType.phone,
                                 decoration: _inputDeco(
-                                  label: 'Mobile Phone *',
+                                  label: 'Mobile *',
                                   hint: '03001234567',
                                   icon: Icons.phone_outlined,
                                 ),
@@ -277,8 +277,8 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
                                 controller: _emailCtrl,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: _inputDeco(
-                                  label: 'Email (Optional)',
-                                  hint: 'head@kpk.edu.pk',
+                                  label: 'Email',
+                                  hint: 'Email',
                                   icon: Icons.email_outlined,
                                 ),
                               ),
@@ -318,7 +318,7 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
                                 obscureText: _obscureConfirmPass,
                                 decoration: _inputDeco(
                                   label: 'Confirm *',
-                                  hint: 'Re-type password',
+                                  hint: 'Confirm',
                                   icon: Icons.lock_clock_outlined,
                                   suffix: IconButton(
                                     icon: Icon(_obscureConfirmPass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18),
