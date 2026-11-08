@@ -41,6 +41,10 @@ class PdfGenerationPayload {
   final String? customNationality;
   final bool isDuplicateSlc;
   final List<Map<String, dynamic>>? goshwaraTeachers;
+  final Uint8List? regularFontBytes;
+  final Uint8List? boldFontBytes;
+  final Uint8List? kpesedLogoBytes;
+  final Uint8List? kpkGovtLogoBytes;
 
   const PdfGenerationPayload({
     required this.type,
@@ -69,6 +73,10 @@ class PdfGenerationPayload {
     this.customNationality,
     this.isDuplicateSlc = false,
     this.goshwaraTeachers,
+    this.regularFontBytes,
+    this.boldFontBytes,
+    this.kpesedLogoBytes,
+    this.kpkGovtLogoBytes,
   });
 }
 
@@ -101,6 +109,10 @@ Future<Uint8List> _pdfGenerationWorker(PdfGenerationPayload payload) async {
     customNationality: payload.customNationality,
     isDuplicateSlc: payload.isDuplicateSlc,
     goshwaraTeachers: payload.goshwaraTeachers,
+    regularFontBytes: payload.regularFontBytes,
+    boldFontBytes: payload.boldFontBytes,
+    kpesedLogoBytes: payload.kpesedLogoBytes,
+    kpkGovtLogoBytes: payload.kpkGovtLogoBytes,
   );
 }
 
@@ -473,6 +485,8 @@ class PdfReportsController extends GetxController {
         ? await studentRepository.getExtendedInfo(targetStudent.id)
         : null;
 
+    final preloadedAssets = await PdfGeneratorService.preloadPdfAssets();
+
     final payload = PdfGenerationPayload(
       type: selectedReportType.value,
       school: school,
@@ -500,6 +514,10 @@ class PdfReportsController extends GetxController {
       customNationality: customNationality.value.trim(),
       isDuplicateSlc: isDuplicateSlc.value,
       goshwaraTeachers: goshwaraTeachersList,
+      regularFontBytes: preloadedAssets.regularFontBytes,
+      boldFontBytes: preloadedAssets.boldFontBytes,
+      kpesedLogoBytes: preloadedAssets.kpesedLogoBytes,
+      kpkGovtLogoBytes: preloadedAssets.kpkGovtLogoBytes,
     );
 
     final pdfBytes = await compute(_pdfGenerationWorker, payload);

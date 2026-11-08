@@ -257,8 +257,56 @@ void main() {
       customConduct: 'EXCELLENT / GOOD',
       isDuplicateSlc: false,
     );
-    expect(bytesSlc.isNotEmpty, true);
-    expect(bytesSlc.length > 5000, true);
+    // 7. Test Official KPK Primary School Monthly Performance Goshwara (ماہانہ گوشوارہ)
+    final bytesGoshwara = await PdfGeneratorService.generateReport(
+      type: ReportType.monthlyGoshwara,
+      school: school,
+      schoolClass: schoolClass,
+      section: section,
+      students: students,
+      attendanceRecords: records,
+      holidays: [],
+      startDate: startDate,
+      endDate: endDate,
+      adminClassSummaries: [
+        const ClassSummaryRow(
+          className: 'Class 1',
+          sectionName: 'A',
+          enrolledCount: 45,
+          presentCount: 40,
+          absentCount: 5,
+          lateCount: 0,
+          leaveCount: 0,
+          unmarkedCount: 0,
+          attendancePercentage: 88.9,
+        ),
+      ],
+      goshwaraTeachers: [
+        {
+          'sno': 1,
+          'name': 'Muhammad Tariq',
+          'father': 'Abdul Qayyum',
+          'post': 'PST',
+          'personal_no': '00124890',
+          'cnic': '15302-1234567-1',
+          'dob': '15-04-1988',
+          'acad': 'M.A',
+          'prof': 'B.Ed',
+          'appt': '01-09-2012',
+          'school_date': '15-08-2018',
+          'bps': '14',
+          'scale_date': '01-07-2016',
+          'pay': '68,500',
+          'type': 'Perm',
+          'village': 'Gulbahar',
+          'tehsil': 'Peshawar City',
+          'district': 'Peshawar',
+          'phone': '0300-1234567',
+        },
+      ],
+    );
+    expect(bytesGoshwara.isNotEmpty, true);
+    expect(bytesGoshwara.length > 5000, true);
   });
 }
 
