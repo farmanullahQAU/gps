@@ -216,8 +216,8 @@ class StudentDao extends DatabaseAccessor<AppDatabase> with _$StudentDaoMixin {
     await customStatement(
       '''
       INSERT INTO school_settings
-        (school_id, school_type, district, tehsil, circle_office, union_council, climate_zone, opening_time, closing_time, late_cutoff_time, head_teacher_name, deo_name, working_days_csv, updated_at, revision)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (school_id, school_type, district, tehsil, circle_office, union_council, climate_zone, opening_time, closing_time, late_cutoff_time, head_teacher_name, deo_name, circle_sdeo_name, center_incharge_name, goshwara_no, na_constituency, pk_constituency, ltrc_center, sanctioned_posts_psht, sanctioned_posts_spst, sanctioned_posts_pst, vacant_posts_pst, vacant_posts_chowkidar, classrooms_instructional, classrooms_non_instructional, establishment_year, construction_year, facility_electricity, facility_water_pipe, facility_water_well, facility_solar, facility_boundary_wall, facility_play_area, facility_office, facility_toilet_count, ptc_chairman_name, ptc_bank_name, ptc_account_no, ptc_sanction_date, fund_total_budget, fund_total_spent, working_days_csv, updated_at, revision)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(school_id) DO UPDATE SET
         school_type = excluded.school_type,
         district = excluded.district,
@@ -230,6 +230,35 @@ class StudentDao extends DatabaseAccessor<AppDatabase> with _$StudentDaoMixin {
         late_cutoff_time = excluded.late_cutoff_time,
         head_teacher_name = excluded.head_teacher_name,
         deo_name = excluded.deo_name,
+        circle_sdeo_name = excluded.circle_sdeo_name,
+        center_incharge_name = excluded.center_incharge_name,
+        goshwara_no = excluded.goshwara_no,
+        na_constituency = excluded.na_constituency,
+        pk_constituency = excluded.pk_constituency,
+        ltrc_center = excluded.ltrc_center,
+        sanctioned_posts_psht = excluded.sanctioned_posts_psht,
+        sanctioned_posts_spst = excluded.sanctioned_posts_spst,
+        sanctioned_posts_pst = excluded.sanctioned_posts_pst,
+        vacant_posts_pst = excluded.vacant_posts_pst,
+        vacant_posts_chowkidar = excluded.vacant_posts_chowkidar,
+        classrooms_instructional = excluded.classrooms_instructional,
+        classrooms_non_instructional = excluded.classrooms_non_instructional,
+        establishment_year = excluded.establishment_year,
+        construction_year = excluded.construction_year,
+        facility_electricity = excluded.facility_electricity,
+        facility_water_pipe = excluded.facility_water_pipe,
+        facility_water_well = excluded.facility_water_well,
+        facility_solar = excluded.facility_solar,
+        facility_boundary_wall = excluded.facility_boundary_wall,
+        facility_play_area = excluded.facility_play_area,
+        facility_office = excluded.facility_office,
+        facility_toilet_count = excluded.facility_toilet_count,
+        ptc_chairman_name = excluded.ptc_chairman_name,
+        ptc_bank_name = excluded.ptc_bank_name,
+        ptc_account_no = excluded.ptc_account_no,
+        ptc_sanction_date = excluded.ptc_sanction_date,
+        fund_total_budget = excluded.fund_total_budget,
+        fund_total_spent = excluded.fund_total_spent,
         working_days_csv = excluded.working_days_csv,
         updated_at = excluded.updated_at,
         revision = excluded.revision
@@ -247,9 +276,98 @@ class StudentDao extends DatabaseAccessor<AppDatabase> with _$StudentDaoMixin {
         settings.lateCutoffTime,
         settings.headTeacherName,
         settings.deoName,
+        settings.circleSdeoName,
+        settings.centerInchargeName,
+        settings.goshwaraNo,
+        settings.naConstituency,
+        settings.pkConstituency,
+        settings.ltrcCenter,
+        settings.sanctionedPostsPsht,
+        settings.sanctionedPostsSpst,
+        settings.sanctionedPostsPst,
+        settings.vacantPostsPst,
+        settings.vacantPostsChowkidar,
+        settings.classroomsInstructional,
+        settings.classroomsNonInstructional,
+        settings.establishmentYear,
+        settings.constructionYear,
+        settings.facilityElectricity ? 1 : 0,
+        settings.facilityWaterPipe ? 1 : 0,
+        settings.facilityWaterWell ? 1 : 0,
+        settings.facilitySolar ? 1 : 0,
+        settings.facilityBoundaryWall ? 1 : 0,
+        settings.facilityPlayArea ? 1 : 0,
+        settings.facilityOffice ? 1 : 0,
+        settings.facilityToiletCount,
+        settings.ptcChairmanName,
+        settings.ptcBankName,
+        settings.ptcAccountNo,
+        settings.ptcSanctionDate,
+        settings.fundTotalBudget,
+        settings.fundTotalSpent,
         settings.workingDaysCsv,
         now,
         settings.revision,
+      ],
+    );
+  }
+
+  // Get Teacher Goshwara Profile
+  Future<TeacherGoshwaraProfile> getTeacherGoshwaraProfile(String userId) async {
+    final rows = await customSelect(
+      'SELECT * FROM teacher_goshwara_profiles WHERE user_id = ? LIMIT 1',
+      variables: [Variable.withString(userId)],
+    ).get();
+    if (rows.isEmpty) {
+      return TeacherGoshwaraProfile(userId: userId);
+    }
+    return TeacherGoshwaraProfile.fromRow(rows.first);
+  }
+
+  // Upsert Teacher Goshwara Profile
+  Future<void> upsertTeacherGoshwaraProfile(TeacherGoshwaraProfile profile) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await customStatement(
+      '''
+      INSERT INTO teacher_goshwara_profiles
+        (user_id, father_name, personal_no, dob, academic_qualification, professional_qualification, appointment_date, transfer_in_date, current_bps, bps_award_date, basic_pay, village, union_council, district, employment_type, updated_at, revision)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        father_name = excluded.father_name,
+        personal_no = excluded.personal_no,
+        dob = excluded.dob,
+        academic_qualification = excluded.academic_qualification,
+        professional_qualification = excluded.professional_qualification,
+        appointment_date = excluded.appointment_date,
+        transfer_in_date = excluded.transfer_in_date,
+        current_bps = excluded.current_bps,
+        bps_award_date = excluded.bps_award_date,
+        basic_pay = excluded.basic_pay,
+        village = excluded.village,
+        union_council = excluded.union_council,
+        district = excluded.district,
+        employment_type = excluded.employment_type,
+        updated_at = excluded.updated_at,
+        revision = excluded.revision
+      ''',
+      [
+        profile.userId,
+        profile.fatherName,
+        profile.personalNo,
+        profile.dob,
+        profile.academicQualification,
+        profile.professionalQualification,
+        profile.appointmentDate,
+        profile.transferInDate,
+        profile.currentBps,
+        profile.bpsAwardDate,
+        profile.basicPay,
+        profile.village,
+        profile.unionCouncil,
+        profile.district,
+        profile.employmentType,
+        now,
+        profile.revision,
       ],
     );
   }

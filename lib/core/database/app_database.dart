@@ -49,6 +49,35 @@ class AppDatabase extends _$AppDatabase {
         late_cutoff_time TEXT NOT NULL DEFAULT '08:15',
         head_teacher_name TEXT NOT NULL DEFAULT 'Head Teacher',
         deo_name TEXT NOT NULL DEFAULT 'DEO Peshawar',
+        circle_sdeo_name TEXT NOT NULL DEFAULT '',
+        center_incharge_name TEXT NOT NULL DEFAULT '',
+        goshwara_no TEXT NOT NULL DEFAULT '',
+        na_constituency TEXT NOT NULL DEFAULT '',
+        pk_constituency TEXT NOT NULL DEFAULT '',
+        ltrc_center TEXT NOT NULL DEFAULT '',
+        sanctioned_posts_psht INTEGER NOT NULL DEFAULT 1,
+        sanctioned_posts_spst INTEGER NOT NULL DEFAULT 4,
+        sanctioned_posts_pst INTEGER NOT NULL DEFAULT 4,
+        vacant_posts_pst INTEGER NOT NULL DEFAULT 0,
+        vacant_posts_chowkidar INTEGER NOT NULL DEFAULT 0,
+        classrooms_instructional INTEGER NOT NULL DEFAULT 3,
+        classrooms_non_instructional INTEGER NOT NULL DEFAULT 0,
+        establishment_year TEXT NOT NULL DEFAULT '',
+        construction_year TEXT NOT NULL DEFAULT '',
+        facility_electricity INTEGER NOT NULL DEFAULT 1,
+        facility_water_pipe INTEGER NOT NULL DEFAULT 1,
+        facility_water_well INTEGER NOT NULL DEFAULT 0,
+        facility_solar INTEGER NOT NULL DEFAULT 1,
+        facility_boundary_wall INTEGER NOT NULL DEFAULT 1,
+        facility_play_area INTEGER NOT NULL DEFAULT 0,
+        facility_office INTEGER NOT NULL DEFAULT 1,
+        facility_toilet_count INTEGER NOT NULL DEFAULT 2,
+        ptc_chairman_name TEXT NOT NULL DEFAULT '',
+        ptc_bank_name TEXT NOT NULL DEFAULT '',
+        ptc_account_no TEXT NOT NULL DEFAULT '',
+        ptc_sanction_date TEXT NOT NULL DEFAULT '',
+        fund_total_budget REAL NOT NULL DEFAULT 0,
+        fund_total_spent REAL NOT NULL DEFAULT 0,
         working_days_csv TEXT NOT NULL DEFAULT '1,2,3,4,5,6',
         updated_at INTEGER NOT NULL DEFAULT 0,
         revision INTEGER NOT NULL DEFAULT 1
@@ -131,6 +160,28 @@ class AppDatabase extends _$AppDatabase {
         created_at INTEGER NOT NULL
       )
     ''');
+
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS teacher_goshwara_profiles (
+        user_id TEXT PRIMARY KEY,
+        father_name TEXT NOT NULL DEFAULT '',
+        personal_no TEXT NOT NULL DEFAULT '',
+        dob TEXT NOT NULL DEFAULT '',
+        academic_qualification TEXT NOT NULL DEFAULT '',
+        professional_qualification TEXT NOT NULL DEFAULT '',
+        appointment_date TEXT NOT NULL DEFAULT '',
+        transfer_in_date TEXT NOT NULL DEFAULT '',
+        current_bps TEXT NOT NULL DEFAULT '',
+        bps_award_date TEXT NOT NULL DEFAULT '',
+        basic_pay REAL NOT NULL DEFAULT 0,
+        village TEXT NOT NULL DEFAULT '',
+        union_council TEXT NOT NULL DEFAULT '',
+        district TEXT NOT NULL DEFAULT '',
+        employment_type TEXT NOT NULL DEFAULT 'permanent',
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        revision INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
   }
 
   Future<void> _migrateUserColumns() async {
@@ -179,6 +230,93 @@ class AppDatabase extends _$AppDatabase {
     try {
       await customStatement('ALTER TABLE student_extended_info ADD COLUMN vaccine_second_dose_date TEXT');
     } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN circle_sdeo_name TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN center_incharge_name TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN goshwara_no TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN na_constituency TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN pk_constituency TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN ltrc_center TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN sanctioned_posts_psht INTEGER NOT NULL DEFAULT 1");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN sanctioned_posts_spst INTEGER NOT NULL DEFAULT 4");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN sanctioned_posts_pst INTEGER NOT NULL DEFAULT 4");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN vacant_posts_pst INTEGER NOT NULL DEFAULT 0");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN vacant_posts_chowkidar INTEGER NOT NULL DEFAULT 0");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN classrooms_instructional INTEGER NOT NULL DEFAULT 3");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN classrooms_non_instructional INTEGER NOT NULL DEFAULT 0");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN establishment_year TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN construction_year TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN facility_electricity INTEGER NOT NULL DEFAULT 1");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN facility_water_pipe INTEGER NOT NULL DEFAULT 1");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN facility_water_well INTEGER NOT NULL DEFAULT 0");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN facility_solar INTEGER NOT NULL DEFAULT 1");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN facility_boundary_wall INTEGER NOT NULL DEFAULT 1");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN facility_play_area INTEGER NOT NULL DEFAULT 0");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN facility_office INTEGER NOT NULL DEFAULT 1");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN facility_toilet_count INTEGER NOT NULL DEFAULT 2");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN ptc_chairman_name TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN ptc_bank_name TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN ptc_account_no TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN ptc_sanction_date TEXT NOT NULL DEFAULT ''");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN fund_total_budget REAL NOT NULL DEFAULT 0");
+    } catch (_) {}
+    try {
+      await customStatement("ALTER TABLE school_settings ADD COLUMN fund_total_spent REAL NOT NULL DEFAULT 0");
+    } catch (_) {}
   }
 
   @override
@@ -213,6 +351,7 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('DELETE FROM sync_conflicts');
       await customStatement('DELETE FROM correction_requests');
       await customStatement('DELETE FROM attendance_sessions');
+      await customStatement('DELETE FROM teacher_goshwara_profiles');
       await customStatement('DELETE FROM student_extended_info');
       await customStatement('DELETE FROM school_settings');
       await delete(syncQueue).go();
@@ -234,6 +373,12 @@ class AppDatabase extends _$AppDatabase {
     await transaction(() async {
       try {
         await customStatement('DELETE FROM sync_conflicts');
+      } catch (_) {}
+      try {
+        await customStatement(
+          'DELETE FROM teacher_goshwara_profiles WHERE user_id IN (SELECT id FROM users WHERE school_id != ?)',
+          [currentSchoolId],
+        );
       } catch (_) {}
       try {
         await customStatement('DELETE FROM correction_requests WHERE school_id != ?', [currentSchoolId]);

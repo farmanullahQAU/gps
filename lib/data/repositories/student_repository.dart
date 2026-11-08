@@ -921,6 +921,30 @@ class StudentRepository {
     return studentDao.getSchoolSettings(schoolId);
   }
 
+  Future<void> saveSchoolSettings(SchoolSettingsModel settings) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final updated = settings.copyWith(
+      updatedAt: now,
+      revision: settings.revision + 1,
+    );
+    await studentDao.upsertSchoolSettings(updated);
+    _triggerLiveSync();
+  }
+
+  Future<TeacherGoshwaraProfile> getTeacherGoshwaraProfile(String userId) {
+    return studentDao.getTeacherGoshwaraProfile(userId);
+  }
+
+  Future<void> saveTeacherGoshwaraProfile(TeacherGoshwaraProfile profile) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final updated = profile.copyWith(
+      updatedAt: now,
+      revision: profile.revision + 1,
+    );
+    await studentDao.upsertTeacherGoshwaraProfile(updated);
+    _triggerLiveSync();
+  }
+
   Future<void> updateSchoolAndSettings({
     required String schoolId,
     required String name,
@@ -950,20 +974,7 @@ class StudentRepository {
       );
 
       final nextSettingsRev = settings.revision + 1;
-      final updatedSettings = SchoolSettingsModel(
-        schoolId: settings.schoolId,
-        schoolType: settings.schoolType,
-        district: settings.district,
-        tehsil: settings.tehsil,
-        circleOffice: settings.circleOffice,
-        unionCouncil: settings.unionCouncil,
-        climateZone: settings.climateZone,
-        openingTime: settings.openingTime,
-        closingTime: settings.closingTime,
-        lateCutoffTime: settings.lateCutoffTime,
-        headTeacherName: settings.headTeacherName,
-        deoName: settings.deoName,
-        workingDaysCsv: settings.workingDaysCsv,
+      final updatedSettings = settings.copyWith(
         updatedAt: now,
         revision: nextSettingsRev,
       );

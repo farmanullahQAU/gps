@@ -276,6 +276,17 @@ class PdfReportsView extends StatelessWidget {
                         const SizedBox(height: 8),
                         _reportCard(
                           controller,
+                          type: ReportType.monthlyGoshwara,
+                          title: 'Monthly Performance Goshwara (ماہانہ گوشوارہ)',
+                          subtitle: 'Official KPK statutory report: staff particulars, posts, facilities & PTC funds',
+                          icon: Icons.table_view_rounded,
+                          accentColor: const Color(0xFF0F5132),
+                          badge: 'STATUTORY',
+                          badgeColor: const Color(0xFF0F5132),
+                        ),
+                        const SizedBox(height: 8),
+                        _reportCard(
+                          controller,
                           type: ReportType.administrativeSummary,
                           title: 'School-Wide ASDEO Inspection Summary',
                           subtitle: 'Consolidated primary classes (Kachi–5th) summary for Head Teacher',

@@ -275,7 +275,10 @@ class PdfReportsController extends GetxController {
     final holidayKeys = holidays.map((h) => h.date).toSet();
 
     List<ClassSummaryRow>? adminSummaries;
-    if (selectedReportType.value == ReportType.administrativeSummary) {
+    List<Map<String, dynamic>>? goshwaraTeachersList;
+
+    if (selectedReportType.value == ReportType.administrativeSummary ||
+        selectedReportType.value == ReportType.monthlyGoshwara) {
       adminSummaries = [];
       final allClasses = await studentRepository.getClasses(schoolId);
       final workDays = PdfGeneratorService.calculateEligibleInstructionalDays(
@@ -335,6 +338,38 @@ class PdfReportsController extends GetxController {
           );
         }
       }
+
+      if (selectedReportType.value == ReportType.monthlyGoshwara) {
+        final teachers = await studentRepository.getTeachers(schoolId);
+        goshwaraTeachersList = [];
+        int sno = 1;
+        for (final t in teachers) {
+          final prof = await studentRepository.getTeacherGoshwaraProfile(t.id);
+          goshwaraTeachersList.add({
+            'sno': sno++,
+            'name': t.name,
+            'father': prof.fatherName.isNotEmpty ? prof.fatherName : '-',
+            'post': (t.designation != null && t.designation!.isNotEmpty)
+                ? (t.designation!.contains('(') ? t.designation!.split('(').last.replaceAll(')', '').trim() : t.designation)
+                : 'PST',
+            'personal_no': prof.personalNo.isNotEmpty ? prof.personalNo : (t.cnic ?? '-'),
+            'cnic': t.cnic ?? '-',
+            'dob': prof.dob.isNotEmpty ? prof.dob : '-',
+            'acad': prof.academicQualification.isNotEmpty ? prof.academicQualification : 'BA',
+            'prof': prof.professionalQualification.isNotEmpty ? prof.professionalQualification : 'PTC/B.Ed',
+            'appt': prof.appointmentDate.isNotEmpty ? prof.appointmentDate : '-',
+            'school_date': prof.transferInDate.isNotEmpty ? prof.transferInDate : '-',
+            'bps': prof.currentBps.isNotEmpty ? prof.currentBps : '14',
+            'scale_date': prof.bpsAwardDate.isNotEmpty ? prof.bpsAwardDate : '-',
+            'pay': prof.basicPay > 0 ? NumberFormat('#,##0').format(prof.basicPay) : '-',
+            'type': prof.isPermanent ? 'Perm (مستقل)' : 'Fixed (عارضی)',
+            'village': prof.village.isNotEmpty ? prof.village : '-',
+            'tehsil': prof.unionCouncil.isNotEmpty ? prof.unionCouncil : settings.tehsil,
+            'district': prof.district.isNotEmpty ? prof.district : settings.district,
+            'phone': t.phone ?? '-',
+          });
+        }
+      }
     }
 
     final teacherName = authCtrl.currentUser.value?.name ?? 'Class Teacher';
@@ -372,13 +407,16 @@ class PdfReportsController extends GetxController {
       customDob: customDob.value.trim().isNotEmpty ? customDob.value.trim() : null,
       customNationality: customNationality.value.trim(),
       isDuplicateSlc: isDuplicateSlc.value,
+      goshwaraTeachers: goshwaraTeachersList,
     );
 
     final sanitizedClass = schoolClass.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
     final sanitizedSec = section.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
     final filename = selectedReportType.value == ReportType.schoolLeavingCertificate && targetStudent != null
         ? '${school.code}_SLC_${targetStudent.admissionNumber}_${targetStudent.fullName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}.pdf'
-        : '${school.code}_${sanitizedClass}_${sanitizedSec}_$startStr.pdf';
+        : (selectedReportType.value == ReportType.monthlyGoshwara
+            ? '${school.code}_Monthly_Goshwara_$startStr.pdf'
+            : '${school.code}_${sanitizedClass}_${sanitizedSec}_$startStr.pdf');
 
     return (bytes: pdfBytes, filename: filename);
   }
