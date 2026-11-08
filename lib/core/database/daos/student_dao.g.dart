@@ -10,6 +10,11 @@ mixin _$StudentDaoMixin on DatabaseAccessor<AppDatabase> {
   $SectionsTable get sections => attachedDatabase.sections;
   $SchoolCalendarHolidaysTable get schoolCalendarHolidays =>
       attachedDatabase.schoolCalendarHolidays;
+  $SchoolSettingsTable get schoolSettings => attachedDatabase.schoolSettings;
+  $StudentExtendedInfoTable get studentExtendedInfo =>
+      attachedDatabase.studentExtendedInfo;
+  $TeacherGoshwaraProfilesTable get teacherGoshwaraProfiles =>
+      attachedDatabase.teacherGoshwaraProfiles;
   StudentDaoManager get managers => StudentDaoManager(this);
 }
 
@@ -31,5 +36,20 @@ class StudentDaoManager {
       $$SchoolCalendarHolidaysTableTableManager(
         _db.attachedDatabase,
         _db.schoolCalendarHolidays,
+      );
+  $$SchoolSettingsTableTableManager get schoolSettings =>
+      $$SchoolSettingsTableTableManager(
+        _db.attachedDatabase,
+        _db.schoolSettings,
+      );
+  $$StudentExtendedInfoTableTableManager get studentExtendedInfo =>
+      $$StudentExtendedInfoTableTableManager(
+        _db.attachedDatabase,
+        _db.studentExtendedInfo,
+      );
+  $$TeacherGoshwaraProfilesTableTableManager get teacherGoshwaraProfiles =>
+      $$TeacherGoshwaraProfilesTableTableManager(
+        _db.attachedDatabase,
+        _db.teacherGoshwaraProfiles,
       );
 }

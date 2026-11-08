@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -11,6 +12,97 @@ import '../../data/repositories/student_repository.dart';
 import '../attendance/attendance_controller.dart';
 import '../auth/auth_controller.dart';
 import 'pdf_generator_service.dart';
+
+/// Payload container for offloading heavy PDF rendering to a background isolate via compute()
+class PdfGenerationPayload {
+  final ReportType type;
+  final School school;
+  final ClassesData schoolClass;
+  final Section section;
+  final List<Student> students;
+  final List<Student>? allSectionStudents;
+  final List<AttendanceRecord> attendanceRecords;
+  final List<SchoolCalendarHoliday> holidays;
+  final DateTime startDate;
+  final DateTime endDate;
+  final Student? specificStudent;
+  final StudentExtendedInfoModel? studentExtendedInfo;
+  final SchoolSettingsModel? schoolSettings;
+  final String? teacherName;
+  final String? headTeacherName;
+  final List<ClassSummaryRow>? adminClassSummaries;
+  final String? customSlcNumber;
+  final String? customFileNumber;
+  final String? customLeavingDate;
+  final String? customLeavingReason;
+  final String? customPromotedStatus;
+  final String? customConduct;
+  final String? customDob;
+  final String? customNationality;
+  final bool isDuplicateSlc;
+  final List<Map<String, dynamic>>? goshwaraTeachers;
+
+  const PdfGenerationPayload({
+    required this.type,
+    required this.school,
+    required this.schoolClass,
+    required this.section,
+    required this.students,
+    this.allSectionStudents,
+    required this.attendanceRecords,
+    required this.holidays,
+    required this.startDate,
+    required this.endDate,
+    this.specificStudent,
+    this.studentExtendedInfo,
+    this.schoolSettings,
+    this.teacherName,
+    this.headTeacherName,
+    this.adminClassSummaries,
+    this.customSlcNumber,
+    this.customFileNumber,
+    this.customLeavingDate,
+    this.customLeavingReason,
+    this.customPromotedStatus,
+    this.customConduct,
+    this.customDob,
+    this.customNationality,
+    this.isDuplicateSlc = false,
+    this.goshwaraTeachers,
+  });
+}
+
+/// Top-level worker executed on background isolate via compute()
+Future<Uint8List> _pdfGenerationWorker(PdfGenerationPayload payload) async {
+  return PdfGeneratorService.generateReport(
+    type: payload.type,
+    school: payload.school,
+    schoolClass: payload.schoolClass,
+    section: payload.section,
+    students: payload.students,
+    allSectionStudents: payload.allSectionStudents,
+    attendanceRecords: payload.attendanceRecords,
+    holidays: payload.holidays,
+    startDate: payload.startDate,
+    endDate: payload.endDate,
+    specificStudent: payload.specificStudent,
+    studentExtendedInfo: payload.studentExtendedInfo,
+    schoolSettings: payload.schoolSettings,
+    teacherName: payload.teacherName,
+    headTeacherName: payload.headTeacherName,
+    adminClassSummaries: payload.adminClassSummaries,
+    customSlcNumber: payload.customSlcNumber,
+    customFileNumber: payload.customFileNumber,
+    customLeavingDate: payload.customLeavingDate,
+    customLeavingReason: payload.customLeavingReason,
+    customPromotedStatus: payload.customPromotedStatus,
+    customConduct: payload.customConduct,
+    customDob: payload.customDob,
+    customNationality: payload.customNationality,
+    isDuplicateSlc: payload.isDuplicateSlc,
+    goshwaraTeachers: payload.goshwaraTeachers,
+  );
+}
 
 class PdfReportsController extends GetxController {
   final AttendanceRepository attendanceRepository;
@@ -381,7 +473,7 @@ class PdfReportsController extends GetxController {
         ? await studentRepository.getExtendedInfo(targetStudent.id)
         : null;
 
-    final pdfBytes = await PdfGeneratorService.generateReport(
+    final payload = PdfGenerationPayload(
       type: selectedReportType.value,
       school: school,
       schoolClass: schoolClass,
@@ -409,6 +501,8 @@ class PdfReportsController extends GetxController {
       isDuplicateSlc: isDuplicateSlc.value,
       goshwaraTeachers: goshwaraTeachersList,
     );
+
+    final pdfBytes = await compute(_pdfGenerationWorker, payload);
 
     final sanitizedClass = schoolClass.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
     final sanitizedSec = section.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
@@ -659,5 +753,20 @@ class PdfReportsController extends GetxController {
     } finally {
       isGenerating.value = false;
     }
+  }
+
+  /// Saves updated KPK School Settings & Goshwara profile via GetX Controller
+  Future<void> saveSchoolSettings(SchoolSettingsModel settings) async {
+    await studentRepository.saveSchoolSettings(settings);
+  }
+
+  /// Saves updated Teacher Goshwara Profile via GetX Controller
+  Future<void> saveTeacherGoshwaraProfile(TeacherGoshwaraProfile profile) async {
+    await studentRepository.saveTeacherGoshwaraProfile(profile);
+  }
+
+  /// Saves Student Leaving Certificate metadata via GetX Controller
+  Future<void> saveStudentLeavingCertificate(StudentExtendedInfoModel info) async {
+    await studentRepository.saveStudentExtendedInfo(info);
   }
 }

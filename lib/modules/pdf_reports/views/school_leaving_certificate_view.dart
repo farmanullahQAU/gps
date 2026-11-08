@@ -78,13 +78,14 @@ class _SchoolLeavingCertificateViewState extends State<SchoolLeavingCertificateV
       if (s.dateOfBirth == null || s.dateOfBirth!.trim().isEmpty) {
         final resolved = PdfGeneratorService.resolveStudentDob(s);
         final isoDob = DateFormat('yyyy-MM-dd').format(resolved);
+        await _reportCtrl.studentRepository.patchStudentDob(
+          studentId: s.id,
+          dobIso: isoDob,
+        );
         final patched = s.copyWith(
           dateOfBirth: Value(isoDob),
           updatedAt: DateTime.now().millisecondsSinceEpoch,
         );
-        await _reportCtrl.studentRepository.db
-            .update(_reportCtrl.studentRepository.db.students)
-            .replace(patched);
         allStudents.add(patched);
       } else {
         allStudents.add(s);
@@ -175,9 +176,9 @@ class _SchoolLeavingCertificateViewState extends State<SchoolLeavingCertificateV
         vaccineSecondDoseDate: existing.vaccineSecondDoseDate,
         revokedQrTokens: existing.revokedQrTokens,
         updatedAt: DateTime.now().millisecondsSinceEpoch,
-        revision: existing.revision + 1,
+        revision: existing.revision,
       );
-      await _reportCtrl.studentRepository.studentDao.upsertExtendedInfo(updated);
+      await _reportCtrl.saveStudentLeavingCertificate(updated);
       if (showToast && mounted) {
         Get.snackbar(
           'Saved',

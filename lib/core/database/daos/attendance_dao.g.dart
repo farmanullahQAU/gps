@@ -11,6 +11,10 @@ mixin _$AttendanceDaoMixin on DatabaseAccessor<AppDatabase> {
   $StudentsTable get students => attachedDatabase.students;
   $ClassesTable get classes => attachedDatabase.classes;
   $SectionsTable get sections => attachedDatabase.sections;
+  $AttendanceSessionsTable get attendanceSessions =>
+      attachedDatabase.attendanceSessions;
+  $CorrectionRequestsTable get correctionRequests =>
+      attachedDatabase.correctionRequests;
   AttendanceDaoManager get managers => AttendanceDaoManager(this);
 }
 
@@ -33,4 +37,14 @@ class AttendanceDaoManager {
       $$ClassesTableTableManager(_db.attachedDatabase, _db.classes);
   $$SectionsTableTableManager get sections =>
       $$SectionsTableTableManager(_db.attachedDatabase, _db.sections);
+  $$AttendanceSessionsTableTableManager get attendanceSessions =>
+      $$AttendanceSessionsTableTableManager(
+        _db.attachedDatabase,
+        _db.attendanceSessions,
+      );
+  $$CorrectionRequestsTableTableManager get correctionRequests =>
+      $$CorrectionRequestsTableTableManager(
+        _db.attachedDatabase,
+        _db.correctionRequests,
+      );
 }

@@ -4,7 +4,7 @@ import '../tables.dart';
 
 part 'sync_dao.g.dart';
 
-@DriftAccessor(tables: [SyncQueue])
+@DriftAccessor(tables: [SyncQueue, SyncConflicts])
 class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   SyncDao(super.db);
 
@@ -128,29 +128,50 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
     required String conflictReason,
   }) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    await customStatement(
-      '''
-      INSERT OR REPLACE INTO sync_conflicts
-        (id, record_id, table_name, student_id, date, local_status, server_status, conflict_reason, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'unresolved', ?)
-      ''',
-      [id, recordId, tableName, studentId, date, localStatus, serverStatus, conflictReason, now],
+    await into(syncConflicts).insertOnConflictUpdate(
+      SyncConflictsCompanion.insert(
+        id: id,
+        recordId: recordId,
+        targetTableName: tableName,
+        studentId: studentId,
+        date: date,
+        localStatus: localStatus,
+        serverStatus: serverStatus,
+        conflictReason: conflictReason,
+        status: const Value('unresolved'),
+        createdAt: now,
+      ),
     );
   }
 
   // Get unresolved conflicts
   Future<List<SyncConflictModel>> getUnresolvedConflicts() async {
-    final rows = await customSelect(
-      "SELECT * FROM sync_conflicts WHERE status = 'unresolved' ORDER BY created_at DESC",
-    ).get();
-    return rows.map((r) => SyncConflictModel.fromRow(r)).toList();
+    final rows = await (select(syncConflicts)
+          ..where((t) => t.status.equals('unresolved'))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+    return rows
+        .map((entry) => SyncConflictModel(
+              id: entry.id,
+              recordId: entry.recordId,
+              tableName: entry.targetTableName,
+              studentId: entry.studentId,
+              date: entry.date,
+              localStatus: entry.localStatus,
+              serverStatus: entry.serverStatus,
+              conflictReason: entry.conflictReason,
+              status: entry.status,
+              createdAt: entry.createdAt,
+            ))
+        .toList();
   }
 
   // Resolve a sync conflict
   Future<void> resolveConflict(String conflictId, String resolutionStatus) async {
-    await customStatement(
-      'UPDATE sync_conflicts SET status = ? WHERE id = ?',
-      [resolutionStatus, conflictId],
+    await (update(syncConflicts)..where((t) => t.id.equals(conflictId))).write(
+      SyncConflictsCompanion(
+        status: Value(resolutionStatus),
+      ),
     );
   }
 }

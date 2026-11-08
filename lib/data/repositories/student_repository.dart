@@ -931,6 +931,64 @@ class StudentRepository {
     _triggerLiveSync();
   }
 
+  Future<void> saveStudentExtendedInfo(StudentExtendedInfoModel info) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final updated = StudentExtendedInfoModel(
+      studentId: info.studentId,
+      studentBForm: info.studentBForm,
+      fatherCnic: info.fatherCnic,
+      motherName: info.motherName,
+      domicileDistrict: info.domicileDistrict,
+      leavingDate: info.leavingDate,
+      leavingReason: info.leavingReason,
+      slcNumber: info.slcNumber,
+      freeBooksIssued: info.freeBooksIssued,
+      isVaccinated: info.isVaccinated,
+      vaccineFirstDoseDate: info.vaccineFirstDoseDate,
+      vaccineSecondDoseDate: info.vaccineSecondDoseDate,
+      revokedQrTokens: info.revokedQrTokens,
+      updatedAt: now,
+      revision: info.revision + 1,
+    );
+    await studentDao.upsertExtendedInfo(updated);
+    await syncDao.enqueue(
+      targetTable: 'student_extended_info',
+      recordId: info.studentId,
+      operation: 'UPDATE',
+      payloadJson: jsonEncode({
+        'student_id': updated.studentId,
+        'student_b_form': updated.studentBForm,
+        'father_cnic': updated.fatherCnic,
+        'mother_name': updated.motherName,
+        'domicile_district': updated.domicileDistrict,
+        'leaving_date': updated.leavingDate,
+        'leaving_reason': updated.leavingReason,
+        'slc_number': updated.slcNumber,
+        'free_books_issued': updated.freeBooksIssued ? 1 : 0,
+        'is_vaccinated': updated.isVaccinated ? 1 : 0,
+        'vaccine_first_dose_date': updated.vaccineFirstDoseDate,
+        'vaccine_second_dose_date': updated.vaccineSecondDoseDate,
+        'previous_qr_tokens_json': updated.revokedQrTokens,
+        'updated_at': now,
+        'revision': updated.revision,
+      }),
+      idempotencyKey: 'ext_${updated.studentId}_v${updated.revision}',
+      clientRevision: updated.revision,
+    );
+    _triggerLiveSync();
+  }
+
+  Future<void> patchStudentDob({required String studentId, required String dobIso}) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await (db.update(db.students)..where((t) => t.id.equals(studentId))).write(
+      StudentsCompanion(
+        dateOfBirth: Value(dobIso),
+        updatedAt: Value(now),
+      ),
+    );
+    _triggerLiveSync();
+  }
+
   Future<TeacherGoshwaraProfile> getTeacherGoshwaraProfile(String userId) {
     return studentDao.getTeacherGoshwaraProfile(userId);
   }

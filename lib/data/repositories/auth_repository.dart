@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:collection/collection.dart';
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/app_database.dart';
@@ -167,6 +169,29 @@ class AuthRepository {
   static const String _prefSchoolKey = 'auth_school_data';
   static const String _prefLastAuthEpochKey = 'auth_last_online_epoch';
 
+  // Secure storage for sensitive credentials and JWT tokens
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(resetOnError: true),
+  );
+
+  /// Cryptographic hash for 4-digit security PIN using SHA-256 and fixed app salt
+  static String hashPin(String pin) {
+    const salt = 'kpk_primary_school_pin_salt_2026';
+    final bytes = utf8.encode('$salt:$pin');
+    final digest = sha256.convert(bytes);
+    return 'sha256:${digest.toString()}';
+  }
+
+  /// Verifies a plain text PIN against a stored hash (supports salted hash and legacy plaintext '1234')
+  static bool verifyPin({required String inputPin, required String storedHash}) {
+    if (storedHash.startsWith('sha256:')) {
+      final computed = hashPin(inputPin);
+      return computed == storedHash;
+    }
+    // Backward compatibility for existing plaintext 4-digit PINs and default '1234'
+    return inputPin == storedHash;
+  }
+
   String baseUrl = 'https://myschool-api.pages.dev'; // Cloudflare Production API
 
   AuthRepository(this.db);
@@ -213,10 +238,26 @@ class AuthRepository {
     return cached;
   }
 
-  // Get stored JWT token
+  // Get stored JWT token from secure hardware storage (with fallback migration from SharedPreferences)
   Future<String?> getAuthToken() async {
+    try {
+      final secureToken = await _secureStorage.read(key: _prefTokenKey);
+      if (secureToken != null && secureToken.isNotEmpty) {
+        return secureToken;
+      }
+    } catch (_) {}
+
+    // Fallback & automatic migration from legacy SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_prefTokenKey);
+    final legacyToken = prefs.getString(_prefTokenKey);
+    if (legacyToken != null && legacyToken.isNotEmpty) {
+      try {
+        await _secureStorage.write(key: _prefTokenKey, value: legacyToken);
+        await prefs.remove(_prefTokenKey);
+      } catch (_) {}
+      return legacyToken;
+    }
+    return null;
   }
 
   // Get cached school map
@@ -237,8 +278,14 @@ class AuthRepository {
     required UserModel user,
     required Map<String, dynamic> school,
   }) async {
+    // Write sensitive token to flutter_secure_storage
+    try {
+      await _secureStorage.write(key: _prefTokenKey, value: token);
+    } catch (_) {}
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefTokenKey, token);
+    // Clean legacy token from SharedPreferences
+    await prefs.remove(_prefTokenKey);
     await prefs.setString(_prefUserKey, jsonEncode(user.toJson()));
     await prefs.setString(_prefSchoolKey, jsonEncode(school));
     await prefs.setInt(_prefLastAuthEpochKey, DateTime.now().millisecondsSinceEpoch);
@@ -246,6 +293,9 @@ class AuthRepository {
 
   // Clear user session without wiping local database
   Future<void> logout() async {
+    try {
+      await _secureStorage.delete(key: _prefTokenKey);
+    } catch (_) {}
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefTokenKey);
     await prefs.remove(_prefUserKey);
@@ -256,8 +306,8 @@ class AuthRepository {
   Future<bool> unlockWithPin(String pin) async {
     final user = await getCachedUser();
     if (user == null) return false;
-    final storedPin = user.pinCodeHash ?? '1234';
-    return pin == storedPin || pin == '1234';
+    final stored = user.pinCodeHash ?? '1234';
+    return verifyPin(inputPin: pin, storedHash: stored) || pin == '1234';
   }
 
   // Switch active local user (e.g. between Head Teacher Admin & PST Teacher for school devices)
@@ -589,10 +639,11 @@ class AuthRepository {
     final user = await getCachedUser();
     if (user == null) return false;
 
+    final hashedPin = hashPin(newPin.trim());
     final now = DateTime.now().millisecondsSinceEpoch;
     await (db.update(db.users)..where((t) => t.id.equals(user.id))).write(
       UsersCompanion(
-        pinCodeHash: Value(newPin),
+        pinCodeHash: Value(hashedPin),
         updatedAt: Value(now),
       ),
     );
@@ -603,7 +654,7 @@ class AuthRepository {
       name: user.name,
       email: user.email,
       role: user.role,
-      pinCodeHash: newPin,
+      pinCodeHash: hashedPin,
       phone: user.phone,
       avatarUrl: user.avatarUrl,
       cnic: user.cnic,
@@ -645,7 +696,9 @@ class AuthRepository {
 
     final now = DateTime.now().millisecondsSinceEpoch;
     final nextRev = localUser.revision + 1;
-    final updatedPin = (newPin != null && newPin.trim().length == 4) ? newPin.trim() : localUser.pinCodeHash;
+    final updatedPin = (newPin != null && newPin.trim().length == 4)
+        ? hashPin(newPin.trim())
+        : localUser.pinCodeHash;
     final updatedName = name?.trim() ?? localUser.name;
     final updatedEmail = email?.trim().toLowerCase() ?? localUser.email;
     final updatedPhone = phone?.trim() ?? localUser.phone;
@@ -794,7 +847,7 @@ class AuthRepository {
 
     // 2. Verify security PIN (default 1234 or teacher's PIN)
     final storedPin = (user.pinCodeHash != null && user.pinCodeHash!.isNotEmpty) ? user.pinCodeHash! : '1234';
-    if (cleanCurrentPin != storedPin && cleanCurrentPin != '1234') {
+    if (!verifyPin(inputPin: cleanCurrentPin, storedHash: storedPin) && cleanCurrentPin != '1234') {
       throw Exception('Incorrect Security PIN. If you do not remember your PIN, please contact your Head Teacher to reset your account.');
     }
 

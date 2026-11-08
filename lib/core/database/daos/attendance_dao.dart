@@ -4,7 +4,15 @@ import '../tables.dart';
 
 part 'attendance_dao.g.dart';
 
-@DriftAccessor(tables: [AttendanceRecords, AttendanceAuditLogs, Students, Classes, Sections])
+@DriftAccessor(tables: [
+  AttendanceRecords,
+  AttendanceAuditLogs,
+  Students,
+  Classes,
+  Sections,
+  AttendanceSessions,
+  CorrectionRequests,
+])
 class AttendanceDao extends DatabaseAccessor<AppDatabase> with _$AttendanceDaoMixin {
   AttendanceDao(super.db);
 
@@ -169,15 +177,26 @@ class AttendanceDao extends DatabaseAccessor<AppDatabase> with _$AttendanceDaoMi
     required String date,
     String? schoolId,
   }) async {
-    final sql = schoolId != null
-        ? 'SELECT * FROM attendance_sessions WHERE school_id = ? AND section_id = ? AND date = ? LIMIT 1'
-        : 'SELECT * FROM attendance_sessions WHERE section_id = ? AND date = ? LIMIT 1';
-    final vars = schoolId != null
-        ? [Variable.withString(schoolId), Variable.withString(sectionId), Variable.withString(date)]
-        : [Variable.withString(sectionId), Variable.withString(date)];
-    final rows = await customSelect(sql, variables: vars).get();
-    if (rows.isEmpty) return null;
-    return AttendanceSessionModel.fromRow(rows.first);
+    var q = select(attendanceSessions)
+      ..where((t) => t.sectionId.equals(sectionId) & t.date.equals(date));
+    if (schoolId != null) {
+      q = q..where((t) => t.schoolId.equals(schoolId));
+    }
+    final entry = await q.getSingleOrNull();
+    if (entry == null) return null;
+    return AttendanceSessionModel(
+      id: entry.id,
+      schoolId: entry.schoolId,
+      classId: entry.classId,
+      sectionId: entry.sectionId,
+      date: entry.date,
+      status: entry.status,
+      finalizedByUserId: entry.finalizedByUserId,
+      finalizedAt: entry.finalizedAt,
+      notes: entry.notes,
+      updatedAt: entry.updatedAt,
+      revision: entry.revision,
+    );
   }
 
   // Upsert attendance session (draft or finalized)
@@ -196,32 +215,20 @@ class AttendanceDao extends DatabaseAccessor<AppDatabase> with _$AttendanceDaoMi
     final nextRev = (existing?.revision ?? 0) + 1;
     final finalizedAt = status == 'finalized' ? now : null;
 
-    await customStatement(
-      '''
-      INSERT INTO attendance_sessions
-        (id, school_id, class_id, section_id, date, status, finalized_by_user_id, finalized_at, notes, updated_at, revision)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(section_id, date) DO UPDATE SET
-        status = excluded.status,
-        finalized_by_user_id = excluded.finalized_by_user_id,
-        finalized_at = excluded.finalized_at,
-        notes = excluded.notes,
-        updated_at = excluded.updated_at,
-        revision = excluded.revision
-      ''',
-      [
-        id,
-        schoolId,
-        classId,
-        sectionId,
-        date,
-        status,
-        finalizedByUserId,
-        finalizedAt,
-        notes,
-        now,
-        nextRev,
-      ],
+    await into(attendanceSessions).insertOnConflictUpdate(
+      AttendanceSessionsCompanion.insert(
+        id: id,
+        schoolId: schoolId,
+        classId: classId,
+        sectionId: sectionId,
+        date: date,
+        status: Value(status),
+        finalizedByUserId: Value(finalizedByUserId),
+        finalizedAt: Value(finalizedAt),
+        notes: Value(notes),
+        updatedAt: now,
+        revision: Value(nextRev),
+      ),
     );
 
     return AttendanceSessionModel(
@@ -245,15 +252,27 @@ class AttendanceDao extends DatabaseAccessor<AppDatabase> with _$AttendanceDaoMi
     required String startDate,
     required String endDate,
   }) async {
-    final rows = await customSelect(
-      'SELECT * FROM attendance_sessions WHERE school_id = ? AND date >= ? AND date <= ?',
-      variables: [
-        Variable.withString(schoolId),
-        Variable.withString(startDate),
-        Variable.withString(endDate),
-      ],
-    ).get();
-    return rows.map((r) => AttendanceSessionModel.fromRow(r)).toList();
+    final rows = await (select(attendanceSessions)
+          ..where((t) =>
+              t.schoolId.equals(schoolId) &
+              t.date.isBiggerOrEqualValue(startDate) &
+              t.date.isSmallerOrEqualValue(endDate)))
+        .get();
+    return rows
+        .map((entry) => AttendanceSessionModel(
+              id: entry.id,
+              schoolId: entry.schoolId,
+              classId: entry.classId,
+              sectionId: entry.sectionId,
+              date: entry.date,
+              status: entry.status,
+              finalizedByUserId: entry.finalizedByUserId,
+              finalizedAt: entry.finalizedAt,
+              notes: entry.notes,
+              updatedAt: entry.updatedAt,
+              revision: entry.revision,
+            ))
+        .toList();
   }
 
   // Create a correction request (when teacher requests change on a finalized session)
@@ -274,29 +293,25 @@ class AttendanceDao extends DatabaseAccessor<AppDatabase> with _$AttendanceDaoMi
     final now = DateTime.now().millisecondsSinceEpoch;
     final id = 'cor_${studentId}_${date}_$now';
 
-    await customStatement(
-      '''
-      INSERT INTO correction_requests
-        (id, school_id, attendance_record_id, student_id, student_name, class_id, section_id, date, old_status, proposed_status, reason, requested_by_user_id, requested_by_name, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
-      ''',
-      [
-        id,
-        schoolId,
-        attendanceRecordId,
-        studentId,
-        studentName,
-        classId,
-        sectionId,
-        date,
-        oldStatus,
-        proposedStatus,
-        reason,
-        requestedByUserId,
-        requestedByName,
-        now,
-        now,
-      ],
+    await into(correctionRequests).insert(
+      CorrectionRequestsCompanion.insert(
+        id: id,
+        schoolId: schoolId,
+        attendanceRecordId: attendanceRecordId,
+        studentId: studentId,
+        studentName: Value(studentName),
+        classId: classId,
+        sectionId: sectionId,
+        date: date,
+        oldStatus: oldStatus,
+        proposedStatus: proposedStatus,
+        reason: reason,
+        requestedByUserId: requestedByUserId,
+        requestedByName: Value(requestedByName),
+        status: const Value('pending'),
+        createdAt: now,
+        updatedAt: now,
+      ),
     );
 
     return CorrectionRequestModel(
@@ -324,19 +339,35 @@ class AttendanceDao extends DatabaseAccessor<AppDatabase> with _$AttendanceDaoMi
     required String schoolId,
     String? status,
   }) async {
+    var q = select(correctionRequests)
+      ..where((t) => t.schoolId.equals(schoolId));
     if (status != null) {
-      final rows = await customSelect(
-        'SELECT * FROM correction_requests WHERE school_id = ? AND status = ? ORDER BY created_at DESC',
-        variables: [Variable.withString(schoolId), Variable.withString(status)],
-      ).get();
-      return rows.map((r) => CorrectionRequestModel.fromRow(r)).toList();
-    } else {
-      final rows = await customSelect(
-        'SELECT * FROM correction_requests WHERE school_id = ? ORDER BY created_at DESC',
-        variables: [Variable.withString(schoolId)],
-      ).get();
-      return rows.map((r) => CorrectionRequestModel.fromRow(r)).toList();
+      q = q..where((t) => t.status.equals(status));
     }
+    final rows = await (q..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
+    return rows
+        .map((entry) => CorrectionRequestModel(
+              id: entry.id,
+              schoolId: entry.schoolId,
+              attendanceRecordId: entry.attendanceRecordId,
+              studentId: entry.studentId,
+              studentName: entry.studentName ?? 'Student',
+              classId: entry.classId,
+              sectionId: entry.sectionId,
+              date: entry.date,
+              oldStatus: entry.oldStatus,
+              proposedStatus: entry.proposedStatus,
+              reason: entry.reason,
+              requestedByUserId: entry.requestedByUserId,
+              requestedByName: entry.requestedByName ?? '',
+              status: entry.status,
+              reviewedByUserId: entry.reviewedByUserId,
+              reviewRemarks: entry.reviewRemarks,
+              createdAt: entry.createdAt,
+              updatedAt: entry.updatedAt,
+              revision: entry.revision,
+            ))
+        .toList();
   }
 
   // Approve or Reject a correction request (Head Teacher / Admin)
@@ -347,13 +378,13 @@ class AttendanceDao extends DatabaseAccessor<AppDatabase> with _$AttendanceDaoMi
     String? reviewRemarks,
   }) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    await customStatement(
-      '''
-      UPDATE correction_requests
-      SET status = ?, reviewed_by_user_id = ?, review_remarks = ?, updated_at = ?
-      WHERE id = ?
-      ''',
-      [decision, reviewedByUserId, reviewRemarks, now, requestId],
+    await (update(correctionRequests)..where((t) => t.id.equals(requestId))).write(
+      CorrectionRequestsCompanion(
+        status: Value(decision),
+        reviewedByUserId: Value(reviewedByUserId),
+        reviewRemarks: Value(reviewRemarks),
+        updatedAt: Value(now),
+      ),
     );
   }
 

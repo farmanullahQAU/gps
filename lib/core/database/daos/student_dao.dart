@@ -5,7 +5,16 @@ import '../tables.dart';
 
 part 'student_dao.g.dart';
 
-@DriftAccessor(tables: [Students, ParentContacts, Classes, Sections, SchoolCalendarHolidays])
+@DriftAccessor(tables: [
+  Students,
+  ParentContacts,
+  Classes,
+  Sections,
+  SchoolCalendarHolidays,
+  SchoolSettings,
+  StudentExtendedInfo,
+  TeacherGoshwaraProfiles,
+])
 class StudentDao extends DatabaseAccessor<AppDatabase> with _$StudentDaoMixin {
   StudentDao(super.db);
 
@@ -144,231 +153,215 @@ class StudentDao extends DatabaseAccessor<AppDatabase> with _$StudentDaoMixin {
 
   // Get KPK extended info for a student
   Future<StudentExtendedInfoModel> getExtendedInfo(String studentId) async {
-    final rows = await customSelect(
-      'SELECT * FROM student_extended_info WHERE student_id = ? LIMIT 1',
-      variables: [Variable.withString(studentId)],
-    ).get();
-    if (rows.isEmpty) {
+    final entry = await (select(studentExtendedInfo)..where((t) => t.studentId.equals(studentId))).getSingleOrNull();
+    if (entry == null) {
       return StudentExtendedInfoModel(studentId: studentId);
     }
-    return StudentExtendedInfoModel.fromRow(rows.first);
+    List<String> parsedTokens = [];
+    try {
+      parsedTokens = (jsonDecode(entry.previousQrTokensJson) as List).map((e) => e.toString()).toList();
+    } catch (_) {}
+
+    return StudentExtendedInfoModel(
+      studentId: entry.studentId,
+      studentBForm: entry.studentBForm,
+      fatherCnic: entry.fatherCnic,
+      motherName: entry.motherName,
+      domicileDistrict: entry.domicileDistrict,
+      leavingDate: entry.leavingDate,
+      leavingReason: entry.leavingReason,
+      slcNumber: entry.slcNumber,
+      freeBooksIssued: entry.freeBooksIssued == 1,
+      isVaccinated: entry.isVaccinated == 1,
+      vaccineFirstDoseDate: entry.vaccineFirstDoseDate,
+      vaccineSecondDoseDate: entry.vaccineSecondDoseDate,
+      revokedQrTokens: parsedTokens,
+      updatedAt: entry.updatedAt,
+      revision: entry.revision,
+    );
   }
 
   // Upsert KPK extended info for a student
   Future<void> upsertExtendedInfo(StudentExtendedInfoModel info) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    await customStatement(
-      '''
-      INSERT INTO student_extended_info
-        (student_id, student_b_form, father_cnic, mother_name, domicile_district, leaving_date, leaving_reason, slc_number, free_books_issued, is_vaccinated, vaccine_first_dose_date, vaccine_second_dose_date, previous_qr_tokens_json, updated_at, revision)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(student_id) DO UPDATE SET
-        student_b_form = excluded.student_b_form,
-        father_cnic = excluded.father_cnic,
-        mother_name = excluded.mother_name,
-        domicile_district = excluded.domicile_district,
-        leaving_date = excluded.leaving_date,
-        leaving_reason = excluded.leaving_reason,
-        slc_number = excluded.slc_number,
-        free_books_issued = excluded.free_books_issued,
-        is_vaccinated = excluded.is_vaccinated,
-        vaccine_first_dose_date = excluded.vaccine_first_dose_date,
-        vaccine_second_dose_date = excluded.vaccine_second_dose_date,
-        previous_qr_tokens_json = excluded.previous_qr_tokens_json,
-        updated_at = excluded.updated_at,
-        revision = excluded.revision
-      ''',
-      [
-        info.studentId,
-        info.studentBForm,
-        info.fatherCnic,
-        info.motherName,
-        info.domicileDistrict,
-        info.leavingDate,
-        info.leavingReason,
-        info.slcNumber,
-        info.freeBooksIssued ? 1 : 0,
-        info.isVaccinated ? 1 : 0,
-        info.vaccineFirstDoseDate,
-        info.vaccineSecondDoseDate,
-        jsonEncode(info.revokedQrTokens),
-        now,
-        info.revision,
-      ],
+    await into(studentExtendedInfo).insertOnConflictUpdate(
+      StudentExtendedInfoCompanion.insert(
+        studentId: info.studentId,
+        studentBForm: Value(info.studentBForm),
+        fatherCnic: Value(info.fatherCnic),
+        motherName: Value(info.motherName),
+        domicileDistrict: Value(info.domicileDistrict),
+        leavingDate: Value(info.leavingDate),
+        leavingReason: Value(info.leavingReason),
+        slcNumber: Value(info.slcNumber),
+        freeBooksIssued: Value(info.freeBooksIssued ? 1 : 0),
+        isVaccinated: Value(info.isVaccinated ? 1 : 0),
+        vaccineFirstDoseDate: Value(info.vaccineFirstDoseDate),
+        vaccineSecondDoseDate: Value(info.vaccineSecondDoseDate),
+        previousQrTokensJson: Value(jsonEncode(info.revokedQrTokens)),
+        updatedAt: Value(now),
+        revision: Value(info.revision),
+      ),
     );
   }
 
   // Get KPK school settings
   Future<SchoolSettingsModel> getSchoolSettings(String schoolId) async {
-    final rows = await customSelect(
-      'SELECT * FROM school_settings WHERE school_id = ? LIMIT 1',
-      variables: [Variable.withString(schoolId)],
-    ).get();
-    if (rows.isEmpty) {
+    final entry = await (select(schoolSettings)..where((t) => t.schoolId.equals(schoolId))).getSingleOrNull();
+    if (entry == null) {
       return SchoolSettingsModel(schoolId: schoolId);
     }
-    return SchoolSettingsModel.fromRow(rows.first);
+    return SchoolSettingsModel(
+      schoolId: entry.schoolId,
+      schoolType: entry.schoolType,
+      district: entry.district,
+      tehsil: entry.tehsil,
+      circleOffice: entry.circleOffice,
+      unionCouncil: entry.unionCouncil,
+      climateZone: entry.climateZone,
+      openingTime: entry.openingTime,
+      closingTime: entry.closingTime,
+      lateCutoffTime: entry.lateCutoffTime,
+      headTeacherName: entry.headTeacherName,
+      deoName: entry.deoName,
+      circleSdeoName: entry.circleSdeoName,
+      centerInchargeName: entry.centerInchargeName,
+      goshwaraNo: entry.goshwaraNo,
+      naConstituency: entry.naConstituency,
+      pkConstituency: entry.pkConstituency,
+      ltrcCenter: entry.ltrcCenter,
+      sanctionedPostsPsht: entry.sanctionedPostsPsht,
+      sanctionedPostsSpst: entry.sanctionedPostsSpst,
+      sanctionedPostsPst: entry.sanctionedPostsPst,
+      vacantPostsPst: entry.vacantPostsPst,
+      vacantPostsChowkidar: entry.vacantPostsChowkidar,
+      classroomsInstructional: entry.classroomsInstructional,
+      classroomsNonInstructional: entry.classroomsNonInstructional,
+      establishmentYear: entry.establishmentYear,
+      constructionYear: entry.constructionYear,
+      facilityElectricity: entry.facilityElectricity == 1,
+      facilityWaterPipe: entry.facilityWaterPipe == 1,
+      facilityWaterWell: entry.facilityWaterWell == 1,
+      facilitySolar: entry.facilitySolar == 1,
+      facilityBoundaryWall: entry.facilityBoundaryWall == 1,
+      facilityPlayArea: entry.facilityPlayArea == 1,
+      facilityOffice: entry.facilityOffice == 1,
+      facilityToiletCount: entry.facilityToiletCount,
+      ptcChairmanName: entry.ptcChairmanName,
+      ptcBankName: entry.ptcBankName,
+      ptcAccountNo: entry.ptcAccountNo,
+      ptcSanctionDate: entry.ptcSanctionDate,
+      fundTotalBudget: entry.fundTotalBudget,
+      fundTotalSpent: entry.fundTotalSpent,
+      workingDaysCsv: entry.workingDaysCsv,
+      updatedAt: entry.updatedAt,
+      revision: entry.revision,
+    );
   }
 
   // Upsert KPK school settings
   Future<void> upsertSchoolSettings(SchoolSettingsModel settings) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    await customStatement(
-      '''
-      INSERT INTO school_settings
-        (school_id, school_type, district, tehsil, circle_office, union_council, climate_zone, opening_time, closing_time, late_cutoff_time, head_teacher_name, deo_name, circle_sdeo_name, center_incharge_name, goshwara_no, na_constituency, pk_constituency, ltrc_center, sanctioned_posts_psht, sanctioned_posts_spst, sanctioned_posts_pst, vacant_posts_pst, vacant_posts_chowkidar, classrooms_instructional, classrooms_non_instructional, establishment_year, construction_year, facility_electricity, facility_water_pipe, facility_water_well, facility_solar, facility_boundary_wall, facility_play_area, facility_office, facility_toilet_count, ptc_chairman_name, ptc_bank_name, ptc_account_no, ptc_sanction_date, fund_total_budget, fund_total_spent, working_days_csv, updated_at, revision)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(school_id) DO UPDATE SET
-        school_type = excluded.school_type,
-        district = excluded.district,
-        tehsil = excluded.tehsil,
-        circle_office = excluded.circle_office,
-        union_council = excluded.union_council,
-        climate_zone = excluded.climate_zone,
-        opening_time = excluded.opening_time,
-        closing_time = excluded.closing_time,
-        late_cutoff_time = excluded.late_cutoff_time,
-        head_teacher_name = excluded.head_teacher_name,
-        deo_name = excluded.deo_name,
-        circle_sdeo_name = excluded.circle_sdeo_name,
-        center_incharge_name = excluded.center_incharge_name,
-        goshwara_no = excluded.goshwara_no,
-        na_constituency = excluded.na_constituency,
-        pk_constituency = excluded.pk_constituency,
-        ltrc_center = excluded.ltrc_center,
-        sanctioned_posts_psht = excluded.sanctioned_posts_psht,
-        sanctioned_posts_spst = excluded.sanctioned_posts_spst,
-        sanctioned_posts_pst = excluded.sanctioned_posts_pst,
-        vacant_posts_pst = excluded.vacant_posts_pst,
-        vacant_posts_chowkidar = excluded.vacant_posts_chowkidar,
-        classrooms_instructional = excluded.classrooms_instructional,
-        classrooms_non_instructional = excluded.classrooms_non_instructional,
-        establishment_year = excluded.establishment_year,
-        construction_year = excluded.construction_year,
-        facility_electricity = excluded.facility_electricity,
-        facility_water_pipe = excluded.facility_water_pipe,
-        facility_water_well = excluded.facility_water_well,
-        facility_solar = excluded.facility_solar,
-        facility_boundary_wall = excluded.facility_boundary_wall,
-        facility_play_area = excluded.facility_play_area,
-        facility_office = excluded.facility_office,
-        facility_toilet_count = excluded.facility_toilet_count,
-        ptc_chairman_name = excluded.ptc_chairman_name,
-        ptc_bank_name = excluded.ptc_bank_name,
-        ptc_account_no = excluded.ptc_account_no,
-        ptc_sanction_date = excluded.ptc_sanction_date,
-        fund_total_budget = excluded.fund_total_budget,
-        fund_total_spent = excluded.fund_total_spent,
-        working_days_csv = excluded.working_days_csv,
-        updated_at = excluded.updated_at,
-        revision = excluded.revision
-      ''',
-      [
-        settings.schoolId,
-        settings.schoolType,
-        settings.district,
-        settings.tehsil,
-        settings.circleOffice,
-        settings.unionCouncil,
-        settings.climateZone,
-        settings.openingTime,
-        settings.closingTime,
-        settings.lateCutoffTime,
-        settings.headTeacherName,
-        settings.deoName,
-        settings.circleSdeoName,
-        settings.centerInchargeName,
-        settings.goshwaraNo,
-        settings.naConstituency,
-        settings.pkConstituency,
-        settings.ltrcCenter,
-        settings.sanctionedPostsPsht,
-        settings.sanctionedPostsSpst,
-        settings.sanctionedPostsPst,
-        settings.vacantPostsPst,
-        settings.vacantPostsChowkidar,
-        settings.classroomsInstructional,
-        settings.classroomsNonInstructional,
-        settings.establishmentYear,
-        settings.constructionYear,
-        settings.facilityElectricity ? 1 : 0,
-        settings.facilityWaterPipe ? 1 : 0,
-        settings.facilityWaterWell ? 1 : 0,
-        settings.facilitySolar ? 1 : 0,
-        settings.facilityBoundaryWall ? 1 : 0,
-        settings.facilityPlayArea ? 1 : 0,
-        settings.facilityOffice ? 1 : 0,
-        settings.facilityToiletCount,
-        settings.ptcChairmanName,
-        settings.ptcBankName,
-        settings.ptcAccountNo,
-        settings.ptcSanctionDate,
-        settings.fundTotalBudget,
-        settings.fundTotalSpent,
-        settings.workingDaysCsv,
-        now,
-        settings.revision,
-      ],
+    await into(schoolSettings).insertOnConflictUpdate(
+      SchoolSettingsCompanion.insert(
+        schoolId: settings.schoolId,
+        schoolType: Value(settings.schoolType),
+        district: Value(settings.district),
+        tehsil: Value(settings.tehsil),
+        circleOffice: Value(settings.circleOffice),
+        unionCouncil: Value(settings.unionCouncil),
+        climateZone: Value(settings.climateZone),
+        openingTime: Value(settings.openingTime),
+        closingTime: Value(settings.closingTime),
+        lateCutoffTime: Value(settings.lateCutoffTime),
+        headTeacherName: Value(settings.headTeacherName),
+        deoName: Value(settings.deoName),
+        circleSdeoName: Value(settings.circleSdeoName),
+        centerInchargeName: Value(settings.centerInchargeName),
+        goshwaraNo: Value(settings.goshwaraNo),
+        naConstituency: Value(settings.naConstituency),
+        pkConstituency: Value(settings.pkConstituency),
+        ltrcCenter: Value(settings.ltrcCenter),
+        sanctionedPostsPsht: Value(settings.sanctionedPostsPsht),
+        sanctionedPostsSpst: Value(settings.sanctionedPostsSpst),
+        sanctionedPostsPst: Value(settings.sanctionedPostsPst),
+        vacantPostsPst: Value(settings.vacantPostsPst),
+        vacantPostsChowkidar: Value(settings.vacantPostsChowkidar),
+        classroomsInstructional: Value(settings.classroomsInstructional),
+        classroomsNonInstructional: Value(settings.classroomsNonInstructional),
+        establishmentYear: Value(settings.establishmentYear),
+        constructionYear: Value(settings.constructionYear),
+        facilityElectricity: Value(settings.facilityElectricity ? 1 : 0),
+        facilityWaterPipe: Value(settings.facilityWaterPipe ? 1 : 0),
+        facilityWaterWell: Value(settings.facilityWaterWell ? 1 : 0),
+        facilitySolar: Value(settings.facilitySolar ? 1 : 0),
+        facilityBoundaryWall: Value(settings.facilityBoundaryWall ? 1 : 0),
+        facilityPlayArea: Value(settings.facilityPlayArea ? 1 : 0),
+        facilityOffice: Value(settings.facilityOffice ? 1 : 0),
+        facilityToiletCount: Value(settings.facilityToiletCount),
+        ptcChairmanName: Value(settings.ptcChairmanName),
+        ptcBankName: Value(settings.ptcBankName),
+        ptcAccountNo: Value(settings.ptcAccountNo),
+        ptcSanctionDate: Value(settings.ptcSanctionDate),
+        fundTotalBudget: Value(settings.fundTotalBudget),
+        fundTotalSpent: Value(settings.fundTotalSpent),
+        workingDaysCsv: Value(settings.workingDaysCsv),
+        updatedAt: Value(now),
+        revision: Value(settings.revision),
+      ),
     );
   }
 
   // Get Teacher Goshwara Profile
   Future<TeacherGoshwaraProfile> getTeacherGoshwaraProfile(String userId) async {
-    final rows = await customSelect(
-      'SELECT * FROM teacher_goshwara_profiles WHERE user_id = ? LIMIT 1',
-      variables: [Variable.withString(userId)],
-    ).get();
-    if (rows.isEmpty) {
+    final entry = await (select(teacherGoshwaraProfiles)..where((t) => t.userId.equals(userId))).getSingleOrNull();
+    if (entry == null) {
       return TeacherGoshwaraProfile(userId: userId);
     }
-    return TeacherGoshwaraProfile.fromRow(rows.first);
+    return TeacherGoshwaraProfile(
+      userId: entry.userId,
+      fatherName: entry.fatherName,
+      personalNo: entry.personalNo,
+      dob: entry.dob,
+      academicQualification: entry.academicQualification,
+      professionalQualification: entry.professionalQualification,
+      appointmentDate: entry.appointmentDate,
+      transferInDate: entry.transferInDate,
+      currentBps: entry.currentBps,
+      bpsAwardDate: entry.bpsAwardDate,
+      basicPay: entry.basicPay,
+      village: entry.village,
+      unionCouncil: entry.unionCouncil,
+      district: entry.district,
+      employmentType: entry.employmentType,
+      updatedAt: entry.updatedAt,
+      revision: entry.revision,
+    );
   }
 
   // Upsert Teacher Goshwara Profile
   Future<void> upsertTeacherGoshwaraProfile(TeacherGoshwaraProfile profile) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    await customStatement(
-      '''
-      INSERT INTO teacher_goshwara_profiles
-        (user_id, father_name, personal_no, dob, academic_qualification, professional_qualification, appointment_date, transfer_in_date, current_bps, bps_award_date, basic_pay, village, union_council, district, employment_type, updated_at, revision)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET
-        father_name = excluded.father_name,
-        personal_no = excluded.personal_no,
-        dob = excluded.dob,
-        academic_qualification = excluded.academic_qualification,
-        professional_qualification = excluded.professional_qualification,
-        appointment_date = excluded.appointment_date,
-        transfer_in_date = excluded.transfer_in_date,
-        current_bps = excluded.current_bps,
-        bps_award_date = excluded.bps_award_date,
-        basic_pay = excluded.basic_pay,
-        village = excluded.village,
-        union_council = excluded.union_council,
-        district = excluded.district,
-        employment_type = excluded.employment_type,
-        updated_at = excluded.updated_at,
-        revision = excluded.revision
-      ''',
-      [
-        profile.userId,
-        profile.fatherName,
-        profile.personalNo,
-        profile.dob,
-        profile.academicQualification,
-        profile.professionalQualification,
-        profile.appointmentDate,
-        profile.transferInDate,
-        profile.currentBps,
-        profile.bpsAwardDate,
-        profile.basicPay,
-        profile.village,
-        profile.unionCouncil,
-        profile.district,
-        profile.employmentType,
-        now,
-        profile.revision,
-      ],
+    await into(teacherGoshwaraProfiles).insertOnConflictUpdate(
+      TeacherGoshwaraProfilesCompanion.insert(
+        userId: profile.userId,
+        fatherName: Value(profile.fatherName),
+        personalNo: Value(profile.personalNo),
+        dob: Value(profile.dob),
+        academicQualification: Value(profile.academicQualification),
+        professionalQualification: Value(profile.professionalQualification),
+        appointmentDate: Value(profile.appointmentDate),
+        transferInDate: Value(profile.transferInDate),
+        currentBps: Value(profile.currentBps),
+        bpsAwardDate: Value(profile.bpsAwardDate),
+        basicPay: Value(profile.basicPay),
+        village: Value(profile.village),
+        unionCouncil: Value(profile.unionCouncil),
+        district: Value(profile.district),
+        employmentType: Value(profile.employmentType),
+        updatedAt: Value(now),
+        revision: Value(profile.revision),
+      ),
     );
   }
 }

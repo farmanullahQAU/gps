@@ -207,7 +207,7 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> with SingleTi
         fundTotalSpent: double.tryParse(_fundSpentCtrl.text.trim()) ?? 0.0,
       );
 
-      await _reportCtrl.studentRepository.saveSchoolSettings(updated);
+      await _reportCtrl.saveSchoolSettings(updated);
       _currentSettings = updated;
 
       if (showToast && mounted) {
@@ -402,7 +402,7 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> with SingleTi
                             employmentType: empType,
                           );
 
-                          await _reportCtrl.studentRepository.saveTeacherGoshwaraProfile(updated);
+                          await _reportCtrl.saveTeacherGoshwaraProfile(updated);
                           if (!mounted) return;
                           setState(() {
                             _teacherProfiles[teacher.id] = updated;

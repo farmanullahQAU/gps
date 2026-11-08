@@ -249,42 +249,54 @@ class SyncRepository {
           final settingsList = data['school_settings'] as List<dynamic>? ?? [];
           for (final raw in settingsList) {
             final st = raw as Map<String, dynamic>;
-            await db.customStatement('''
-              INSERT INTO school_settings
-                (school_id, school_type, district, tehsil, circle_office, union_council, climate_zone, opening_time, closing_time, late_cutoff_time, head_teacher_name, deo_name, working_days_csv, updated_at, revision)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-              ON CONFLICT(school_id) DO UPDATE SET
-                school_type = excluded.school_type,
-                district = excluded.district,
-                tehsil = excluded.tehsil,
-                circle_office = excluded.circle_office,
-                union_council = excluded.union_council,
-                climate_zone = excluded.climate_zone,
-                opening_time = excluded.opening_time,
-                closing_time = excluded.closing_time,
-                late_cutoff_time = excluded.late_cutoff_time,
-                head_teacher_name = excluded.head_teacher_name,
-                deo_name = excluded.deo_name,
-                working_days_csv = excluded.working_days_csv,
-                updated_at = excluded.updated_at,
-                revision = excluded.revision
-            ''', [
-              st['school_id'].toString(),
-              (st['school_type'] ?? 'GPS').toString(),
-              (st['district'] ?? 'Peshawar').toString(),
-              (st['tehsil'] ?? 'City Peshawar').toString(),
-              (st['circle_office'] ?? 'ASDEO Circle City-I').toString(),
-              (st['union_council'] ?? 'UC-12').toString(),
-              (st['climate_zone'] ?? 'summer_zone').toString(),
-              (st['opening_time'] ?? '08:00').toString(),
-              (st['closing_time'] ?? '13:30').toString(),
-              (st['late_cutoff_time'] ?? '08:15').toString(),
-              (st['head_teacher_name'] ?? 'Head Teacher').toString(),
-              (st['deo_name'] ?? 'DEO Peshawar').toString(),
-              (st['working_days_csv'] ?? '1,2,3,4,5,6').toString(),
-              int.tryParse(st['updated_at']?.toString() ?? '0') ?? 0,
-              int.tryParse(st['revision']?.toString() ?? '1') ?? 1,
-            ]);
+            await db.into(db.schoolSettings).insertOnConflictUpdate(
+                  SchoolSettingsCompanion.insert(
+                    schoolId: st['school_id'].toString(),
+                    schoolType: Value((st['school_type'] ?? 'GPS').toString()),
+                    district: Value((st['district'] ?? 'Peshawar').toString()),
+                    tehsil: Value((st['tehsil'] ?? 'City Peshawar').toString()),
+                    circleOffice: Value((st['circle_office'] ?? 'ASDEO Circle City-I').toString()),
+                    unionCouncil: Value((st['union_council'] ?? 'UC-12').toString()),
+                    climateZone: Value((st['climate_zone'] ?? 'summer_zone').toString()),
+                    openingTime: Value((st['opening_time'] ?? '08:00').toString()),
+                    closingTime: Value((st['closing_time'] ?? '13:30').toString()),
+                    lateCutoffTime: Value((st['late_cutoff_time'] ?? '08:15').toString()),
+                    headTeacherName: Value((st['head_teacher_name'] ?? 'Head Teacher').toString()),
+                    deoName: Value((st['deo_name'] ?? 'DEO Peshawar').toString()),
+                    circleSdeoName: Value((st['circle_sdeo_name'] ?? '').toString()),
+                    centerInchargeName: Value((st['center_incharge_name'] ?? '').toString()),
+                    goshwaraNo: Value((st['goshwara_no'] ?? '').toString()),
+                    naConstituency: Value((st['na_constituency'] ?? '').toString()),
+                    pkConstituency: Value((st['pk_constituency'] ?? '').toString()),
+                    ltrcCenter: Value((st['ltrc_center'] ?? '').toString()),
+                    sanctionedPostsPsht: Value(int.tryParse(st['sanctioned_posts_psht']?.toString() ?? '1') ?? 1),
+                    sanctionedPostsSpst: Value(int.tryParse(st['sanctioned_posts_spst']?.toString() ?? '4') ?? 4),
+                    sanctionedPostsPst: Value(int.tryParse(st['sanctioned_posts_pst']?.toString() ?? '4') ?? 4),
+                    vacantPostsPst: Value(int.tryParse(st['vacant_posts_pst']?.toString() ?? '0') ?? 0),
+                    vacantPostsChowkidar: Value(int.tryParse(st['vacant_posts_chowkidar']?.toString() ?? '0') ?? 0),
+                    classroomsInstructional: Value(int.tryParse(st['classrooms_instructional']?.toString() ?? '3') ?? 3),
+                    classroomsNonInstructional: Value(int.tryParse(st['classrooms_non_instructional']?.toString() ?? '0') ?? 0),
+                    establishmentYear: Value((st['establishment_year'] ?? '').toString()),
+                    constructionYear: Value((st['construction_year'] ?? '').toString()),
+                    facilityElectricity: Value((st['facility_electricity'] != null ? (st['facility_electricity'] == 1 || st['facility_electricity'] == true) : true) ? 1 : 0),
+                    facilityWaterPipe: Value((st['facility_water_pipe'] != null ? (st['facility_water_pipe'] == 1 || st['facility_water_pipe'] == true) : true) ? 1 : 0),
+                    facilityWaterWell: Value((st['facility_water_well'] != null ? (st['facility_water_well'] == 1 || st['facility_water_well'] == true) : false) ? 1 : 0),
+                    facilitySolar: Value((st['facility_solar'] != null ? (st['facility_solar'] == 1 || st['facility_solar'] == true) : true) ? 1 : 0),
+                    facilityBoundaryWall: Value((st['facility_boundary_wall'] != null ? (st['facility_boundary_wall'] == 1 || st['facility_boundary_wall'] == true) : true) ? 1 : 0),
+                    facilityPlayArea: Value((st['facility_play_area'] != null ? (st['facility_play_area'] == 1 || st['facility_play_area'] == true) : false) ? 1 : 0),
+                    facilityOffice: Value((st['facility_office'] != null ? (st['facility_office'] == 1 || st['facility_office'] == true) : true) ? 1 : 0),
+                    facilityToiletCount: Value(int.tryParse(st['facility_toilet_count']?.toString() ?? '2') ?? 2),
+                    ptcChairmanName: Value((st['ptc_chairman_name'] ?? '').toString()),
+                    ptcBankName: Value((st['ptc_bank_name'] ?? '').toString()),
+                    ptcAccountNo: Value((st['ptc_account_no'] ?? '').toString()),
+                    ptcSanctionDate: Value((st['ptc_sanction_date'] ?? '').toString()),
+                    fundTotalBudget: Value(double.tryParse(st['fund_total_budget']?.toString() ?? '0') ?? 0.0),
+                    fundTotalSpent: Value(double.tryParse(st['fund_total_spent']?.toString() ?? '0') ?? 0.0),
+                    workingDaysCsv: Value((st['working_days_csv'] ?? '1,2,3,4,5,6').toString()),
+                    updatedAt: Value(int.tryParse(st['updated_at']?.toString() ?? '0') ?? 0),
+                    revision: Value(int.tryParse(st['revision']?.toString() ?? '1') ?? 1),
+                  ),
+                );
             mergedCount++;
           }
 
@@ -386,36 +398,25 @@ class SyncRepository {
             final prevTokens = e['previous_qr_tokens_json'] is String
                 ? e['previous_qr_tokens_json'].toString()
                 : jsonEncode(e['previous_qr_tokens_json'] ?? []);
-            await db.customStatement('''
-              INSERT INTO student_extended_info
-                (student_id, student_b_form, father_cnic, mother_name, domicile_district, leaving_date, leaving_reason, slc_number, free_books_issued, previous_qr_tokens_json, updated_at, revision)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-              ON CONFLICT(student_id) DO UPDATE SET
-                student_b_form = excluded.student_b_form,
-                father_cnic = excluded.father_cnic,
-                mother_name = excluded.mother_name,
-                domicile_district = excluded.domicile_district,
-                leaving_date = excluded.leaving_date,
-                leaving_reason = excluded.leaving_reason,
-                slc_number = excluded.slc_number,
-                free_books_issued = excluded.free_books_issued,
-                previous_qr_tokens_json = excluded.previous_qr_tokens_json,
-                updated_at = excluded.updated_at,
-                revision = excluded.revision
-            ''', [
-              studentId,
-              e['student_b_form']?.toString(),
-              e['father_cnic']?.toString(),
-              e['mother_name']?.toString(),
-              e['domicile_district']?.toString() ?? 'Peshawar',
-              e['leaving_date']?.toString(),
-              e['leaving_reason']?.toString(),
-              e['slc_number']?.toString(),
-              (e['free_books_issued'] == 1 || e['free_books_issued'] == true) ? 1 : 0,
-              prevTokens,
-              int.tryParse(e['updated_at']?.toString() ?? '0') ?? 0,
-              int.tryParse(e['revision']?.toString() ?? '1') ?? 1,
-            ]);
+            await db.into(db.studentExtendedInfo).insertOnConflictUpdate(
+                  StudentExtendedInfoCompanion.insert(
+                    studentId: studentId,
+                    studentBForm: Value(e['student_b_form']?.toString()),
+                    fatherCnic: Value(e['father_cnic']?.toString()),
+                    motherName: Value(e['mother_name']?.toString()),
+                    domicileDistrict: Value(e['domicile_district']?.toString() ?? 'Peshawar'),
+                    leavingDate: Value(e['leaving_date']?.toString()),
+                    leavingReason: Value(e['leaving_reason']?.toString()),
+                    slcNumber: Value(e['slc_number']?.toString()),
+                    freeBooksIssued: Value((e['free_books_issued'] == 1 || e['free_books_issued'] == true) ? 1 : 0),
+                    isVaccinated: Value((e['is_vaccinated'] == 1 || e['is_vaccinated'] == true) ? 1 : 0),
+                    vaccineFirstDoseDate: Value(e['vaccine_first_dose_date']?.toString()),
+                    vaccineSecondDoseDate: Value(e['vaccine_second_dose_date']?.toString()),
+                    previousQrTokensJson: Value(prevTokens),
+                    updatedAt: Value(int.tryParse(e['updated_at']?.toString() ?? '0') ?? 0),
+                    revision: Value(int.tryParse(e['revision']?.toString() ?? '1') ?? 1),
+                  ),
+                );
             mergedCount++;
           }
 
@@ -537,30 +538,21 @@ class SyncRepository {
             }
             final serverRev = int.tryParse(s['revision']?.toString() ?? '1') ?? 1;
 
-            await db.customStatement('''
-              INSERT INTO attendance_sessions
-                (id, school_id, class_id, section_id, date, status, finalized_by_user_id, finalized_at, notes, updated_at, revision)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-              ON CONFLICT(section_id, date) DO UPDATE SET
-                status = excluded.status,
-                finalized_by_user_id = excluded.finalized_by_user_id,
-                finalized_at = excluded.finalized_at,
-                notes = excluded.notes,
-                updated_at = excluded.updated_at,
-                revision = excluded.revision
-            ''', [
-              s['id'].toString(),
-              s['school_id'].toString(),
-              s['class_id'].toString(),
-              sectionId,
-              date,
-              (s['status'] ?? 'draft').toString(),
-              s['finalized_by_user_id']?.toString(),
-              s['finalized_at'] != null ? int.tryParse(s['finalized_at'].toString()) : null,
-              s['notes']?.toString(),
-              int.tryParse(s['updated_at']?.toString() ?? '0') ?? DateTime.now().millisecondsSinceEpoch,
-              serverRev,
-            ]);
+            await db.into(db.attendanceSessions).insertOnConflictUpdate(
+                  AttendanceSessionsCompanion.insert(
+                    id: s['id'].toString(),
+                    schoolId: s['school_id'].toString(),
+                    classId: s['class_id'].toString(),
+                    sectionId: sectionId,
+                    date: date,
+                    status: Value((s['status'] ?? 'draft').toString()),
+                    finalizedByUserId: Value(s['finalized_by_user_id']?.toString()),
+                    finalizedAt: Value(s['finalized_at'] != null ? int.tryParse(s['finalized_at'].toString()) : null),
+                    notes: Value(s['notes']?.toString()),
+                    updatedAt: int.tryParse(s['updated_at']?.toString() ?? '0') ?? DateTime.now().millisecondsSinceEpoch,
+                    revision: Value(serverRev),
+                  ),
+                );
             mergedCount++;
           }
 
@@ -568,35 +560,28 @@ class SyncRepository {
           final correctionsList = data['corrections'] as List<dynamic>? ?? [];
           for (final raw in correctionsList) {
             final cr = raw as Map<String, dynamic>;
-            await db.customStatement('''
-              INSERT INTO correction_requests
-                (id, school_id, attendance_record_id, student_id, student_name, class_id, section_id, date, old_status, proposed_status, reason, requested_by_user_id, requested_by_name, status, reviewed_by_user_id, review_remarks, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-              ON CONFLICT(id) DO UPDATE SET
-                status = excluded.status,
-                reviewed_by_user_id = excluded.reviewed_by_user_id,
-                review_remarks = excluded.review_remarks,
-                updated_at = excluded.updated_at
-            ''', [
-              cr['id'].toString(),
-              cr['school_id'].toString(),
-              cr['attendance_record_id'].toString(),
-              cr['student_id'].toString(),
-              cr['student_name']?.toString(),
-              cr['class_id'].toString(),
-              cr['section_id'].toString(),
-              cr['date'].toString(),
-              cr['old_status'].toString(),
-              cr['proposed_status'].toString(),
-              cr['reason'].toString(),
-              cr['requested_by_user_id'].toString(),
-              cr['requested_by_name']?.toString(),
-              (cr['status'] ?? 'pending').toString(),
-              cr['reviewed_by_user_id']?.toString(),
-              cr['review_remarks']?.toString(),
-              int.tryParse(cr['created_at']?.toString() ?? '0') ?? 0,
-              int.tryParse(cr['updated_at']?.toString() ?? '0') ?? 0,
-            ]);
+            await db.into(db.correctionRequests).insertOnConflictUpdate(
+                  CorrectionRequestsCompanion.insert(
+                    id: cr['id'].toString(),
+                    schoolId: cr['school_id'].toString(),
+                    attendanceRecordId: cr['attendance_record_id'].toString(),
+                    studentId: cr['student_id'].toString(),
+                    studentName: Value(cr['student_name']?.toString()),
+                    classId: cr['class_id'].toString(),
+                    sectionId: cr['section_id'].toString(),
+                    date: cr['date'].toString(),
+                    oldStatus: cr['old_status'].toString(),
+                    proposedStatus: cr['proposed_status'].toString(),
+                    reason: cr['reason'].toString(),
+                    requestedByUserId: cr['requested_by_user_id'].toString(),
+                    requestedByName: Value(cr['requested_by_name']?.toString()),
+                    status: Value((cr['status'] ?? 'pending').toString()),
+                    reviewedByUserId: Value(cr['reviewed_by_user_id']?.toString()),
+                    reviewRemarks: Value(cr['review_remarks']?.toString()),
+                    createdAt: int.tryParse(cr['created_at']?.toString() ?? '0') ?? 0,
+                    updatedAt: int.tryParse(cr['updated_at']?.toString() ?? '0') ?? 0,
+                  ),
+                );
             mergedCount++;
           }
         });

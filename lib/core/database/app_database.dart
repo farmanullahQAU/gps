@@ -21,6 +21,12 @@ part 'app_database.g.dart';
     AttendanceRecords,
     AttendanceAuditLogs,
     SyncQueue,
+    SchoolSettings,
+    StudentExtendedInfo,
+    AttendanceSessions,
+    CorrectionRequests,
+    SyncConflicts,
+    TeacherGoshwaraProfiles,
   ],
   daos: [
     AttendanceDao,
