@@ -17,13 +17,24 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
   bool _obscurePassword = true;
+  bool _useFullSignIn = true;
+  bool _isAuthenticating = false;
 
-  bool _useFullSignIn = false;
   final _signInFormKey = GlobalKey<FormState>();
   final TextEditingController _loginIdentifierCtrl = TextEditingController();
   final TextEditingController _loginEmisCtrl = TextEditingController();
   final TextEditingController _loginPassCtrl = TextEditingController();
   final TextEditingController _quickPinCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final controller = Get.find<AuthController>();
+    final current = controller.currentUser.value;
+    // Show quick PIN unlock on open ONLY IF an existing cached session was already present
+    // waiting to be unlocked (e.g. app lock/returning user). Otherwise default to Full Sign In.
+    _useFullSignIn = (current == null || current.name.isEmpty);
+  }
 
   @override
   void dispose() {
@@ -74,10 +85,13 @@ class _LoginViewState extends State<LoginView> {
                           final cachedUser = controller.currentUser.value;
                           final hasCached = cachedUser != null && cachedUser.name.isNotEmpty;
 
-                          if (hasCached && !_useFullSignIn) {
+                          // CRITICAL UX FIX: If user is actively authenticating with email/password
+                          // or has chosen full sign-in form, NEVER render the PIN unlock card.
+                          // Email/Password login authenticates directly to MainNavigationShell.
+                          if (hasCached && !_useFullSignIn && !_isAuthenticating) {
                             return _buildQuickPinUnlockCard(context, controller, cachedUser);
                           }
-                          return _buildSignInForm(context, controller, showSwitchBack: hasCached);
+                          return _buildSignInForm(context, controller, showSwitchBack: hasCached && !_isAuthenticating);
                         }),
                       ),
                     ),
@@ -174,9 +188,7 @@ class _LoginViewState extends State<LoginView> {
 
         // Submit PIN Unlock
         Obx(() {
-          if (controller.isLoading.value) {
-            return const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()));
-          }
+          final isLoading = controller.isLoading.value || _isAuthenticating;
           return SizedBox(
             width: double.infinity,
             height: 48,
@@ -187,36 +199,50 @@ class _LoginViewState extends State<LoginView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 elevation: 2,
               ),
-              icon: const Icon(Icons.lock_open_rounded, size: 20),
-              label: const Text(
-                'UNLOCK PORTAL',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, letterSpacing: 0.5),
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                    )
+                  : const Icon(Icons.lock_open_rounded, size: 20),
+              label: Text(
+                isLoading ? 'UNLOCKING PORTAL...' : 'UNLOCK PORTAL',
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, letterSpacing: 0.5),
               ),
-              onPressed: () async {
-                final pin = _quickPinCtrl.text.trim();
-                if (pin.length < 4) {
-                  Get.snackbar(
-                    'Invalid PIN',
-                    'Please enter your 4-digit PIN (default: 1234)',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: const Color(0xFFFEF3C7),
-                    colorText: const Color(0xFF92400E),
-                  );
-                  return;
-                }
-                final ok = await controller.unlockWithPin(pin);
-                if (ok) {
-                  Get.offAll(() => const MainNavigationShell());
-                } else {
-                  Get.snackbar(
-                    'Incorrect PIN',
-                    'The PIN entered is incorrect. Default is 1234 or tap Switch User below.',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: const Color(0xFFFEE2E2),
-                    colorText: const Color(0xFF991B1B),
-                  );
-                }
-              },
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final pin = _quickPinCtrl.text.trim();
+                      if (pin.length < 4) {
+                        Get.snackbar(
+                          'Invalid PIN',
+                          'Please enter your 4-digit PIN (default: 1234)',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: const Color(0xFFFEF3C7),
+                          colorText: const Color(0xFF92400E),
+                        );
+                        return;
+                      }
+                      setState(() => _isAuthenticating = true);
+                      try {
+                        final ok = await controller.unlockWithPin(pin);
+                        if (ok) {
+                          Get.offAll(() => const MainNavigationShell());
+                        } else {
+                          if (mounted) setState(() => _isAuthenticating = false);
+                          Get.snackbar(
+                            'Incorrect PIN',
+                            'The PIN entered is incorrect. Default is 1234 or tap Switch User below.',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: const Color(0xFFFEE2E2),
+                            colorText: const Color(0xFF991B1B),
+                          );
+                        }
+                      } catch (_) {
+                        if (mounted) setState(() => _isAuthenticating = false);
+                      }
+                    },
             ),
           );
         }),
@@ -225,6 +251,8 @@ class _LoginViewState extends State<LoginView> {
         Obx(() {
           final enabled = controller.isBiometricEnabled.value;
           if (!enabled) return const SizedBox.shrink();
+
+          final isLoading = controller.isLoading.value || _isAuthenticating;
 
           return Padding(
             padding: const EdgeInsets.only(top: 10.0),
@@ -243,12 +271,21 @@ class _LoginViewState extends State<LoginView> {
                   'UNLOCK WITH FINGERPRINT',
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, letterSpacing: 0.3),
                 ),
-                onPressed: () async {
-                  final ok = await controller.loginWithBiometrics();
-                  if (ok) {
-                    Get.offAll(() => const MainNavigationShell());
-                  }
-                },
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        setState(() => _isAuthenticating = true);
+                        try {
+                          final ok = await controller.loginWithBiometrics();
+                          if (ok) {
+                            Get.offAll(() => const MainNavigationShell());
+                          } else {
+                            if (mounted) setState(() => _isAuthenticating = false);
+                          }
+                        } catch (_) {
+                          if (mounted) setState(() => _isAuthenticating = false);
+                        }
+                      },
               ),
             ),
           );
@@ -261,6 +298,7 @@ class _LoginViewState extends State<LoginView> {
           onPressed: () {
             setState(() {
               _useFullSignIn = true;
+              _isAuthenticating = false;
               _loginIdentifierCtrl.text = user.email.isNotEmpty ? user.email : (user.phone ?? '');
             });
           },
@@ -330,7 +368,12 @@ class _LoginViewState extends State<LoginView> {
               if (showSwitchBack)
                 TextButton(
                   style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                  onPressed: () => setState(() => _useFullSignIn = false),
+                  onPressed: () {
+                    setState(() {
+                      _useFullSignIn = false;
+                      _isAuthenticating = false;
+                    });
+                  },
                   child: const Text('Back to PIN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
                 ),
             ],
@@ -345,6 +388,7 @@ class _LoginViewState extends State<LoginView> {
           // User Identifier (Email or CNIC Number)
           TextFormField(
             controller: _loginIdentifierCtrl,
+            enabled: !_isAuthenticating,
             keyboardType: TextInputType.text,
             decoration: InputDecoration(
               labelText: 'Email or CNIC',
@@ -378,6 +422,7 @@ class _LoginViewState extends State<LoginView> {
           TextFormField(
             controller: _loginPassCtrl,
             obscureText: _obscurePassword,
+            enabled: !_isAuthenticating,
             decoration: InputDecoration(
               labelText: 'Password',
               hintText: 'Password',
@@ -407,7 +452,7 @@ class _LoginViewState extends State<LoginView> {
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.only(top: 4, bottom: 2),
               ),
-              onPressed: () => _openForgotPasswordDialog(context, controller),
+              onPressed: _isAuthenticating ? null : () => _openForgotPasswordDialog(context, controller),
               child: const Text(
                 'Forgot password?',
                 style: TextStyle(
@@ -423,14 +468,7 @@ class _LoginViewState extends State<LoginView> {
 
           // Sign In Submit Button
           Obx(() {
-            if (controller.isLoading.value) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
+            final isLoading = _isAuthenticating || controller.isLoading.value;
             return SizedBox(
               width: double.infinity,
               height: 48,
@@ -441,29 +479,55 @@ class _LoginViewState extends State<LoginView> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 2,
                 ),
-                icon: const Icon(Icons.login_rounded, size: 19),
-                onPressed: () async {
-                  if (!_signInFormKey.currentState!.validate()) return;
-
-                  final email = _loginIdentifierCtrl.text.trim();
-                  final pass = _loginPassCtrl.text;
-
-                  final ok = await controller.login(
-                    identifier: email,
-                    password: pass,
-                  );
-                  if (ok) {
-                    Get.offAll(() => const MainNavigationShell());
-                  } else if (controller.multipleSchoolTenants.isNotEmpty) {
-                    if (context.mounted) {
-                      _showSchoolWorkspaceSelector(context, controller, email, pass);
-                    }
-                  }
-                },
-                label: const Text(
-                  'SIGN IN TO PORTAL',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, letterSpacing: 0.5),
+                icon: isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                      )
+                    : const Icon(Icons.login_rounded, size: 19),
+                label: Text(
+                  isLoading ? 'SIGNING IN TO PORTAL...' : 'SIGN IN TO PORTAL',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, letterSpacing: 0.5),
                 ),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        if (!_signInFormKey.currentState!.validate()) return;
+
+                        final email = _loginIdentifierCtrl.text.trim();
+                        final pass = _loginPassCtrl.text;
+
+                        setState(() {
+                          _isAuthenticating = true;
+                          _useFullSignIn = true;
+                        });
+
+                        try {
+                          final ok = await controller.login(
+                            identifier: email,
+                            password: pass,
+                          );
+                          if (ok) {
+                            Get.offAll(() => const MainNavigationShell());
+                          } else if (controller.multipleSchoolTenants.isNotEmpty) {
+                            if (mounted) {
+                              setState(() => _isAuthenticating = false);
+                              if (context.mounted) {
+                                _showSchoolWorkspaceSelector(context, controller, email, pass);
+                              }
+                            }
+                          } else {
+                            if (mounted) {
+                              setState(() => _isAuthenticating = false);
+                            }
+                          }
+                        } catch (_) {
+                          if (mounted) {
+                            setState(() => _isAuthenticating = false);
+                          }
+                        }
+                      },
               ),
             );
           }),
@@ -474,6 +538,7 @@ class _LoginViewState extends State<LoginView> {
             final userMeta = controller.biometricUserInfo;
             if (!enabled) return const SizedBox.shrink();
 
+            final isLoading = _isAuthenticating || controller.isLoading.value;
             final userName = userMeta['name'];
             final displayName = (userName != null && userName.isNotEmpty)
                 ? ' ($userName)'
@@ -497,12 +562,21 @@ class _LoginViewState extends State<LoginView> {
                     style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 0.3),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  onPressed: () async {
-                    final ok = await controller.loginWithBiometrics();
-                    if (ok) {
-                      Get.offAll(() => const MainNavigationShell());
-                    }
-                  },
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          setState(() => _isAuthenticating = true);
+                          try {
+                            final ok = await controller.loginWithBiometrics();
+                            if (ok) {
+                              Get.offAll(() => const MainNavigationShell());
+                            } else {
+                              if (mounted) setState(() => _isAuthenticating = false);
+                            }
+                          } catch (_) {
+                            if (mounted) setState(() => _isAuthenticating = false);
+                          }
+                        },
                 ),
               ),
             );
@@ -635,13 +709,23 @@ class _LoginViewState extends State<LoginView> {
                     trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
                     onTap: () async {
                       Navigator.pop(ctx);
-                      final ok = await controller.login(
-                        identifier: identifier,
-                        emisCode: school.schoolCode,
-                        password: password,
-                      );
-                      if (ok) {
-                        Get.offAll(() => const MainNavigationShell());
+                      setState(() {
+                        _isAuthenticating = true;
+                        _useFullSignIn = true;
+                      });
+                      try {
+                        final ok = await controller.login(
+                          identifier: identifier,
+                          emisCode: school.schoolCode,
+                          password: password,
+                        );
+                        if (ok) {
+                          Get.offAll(() => const MainNavigationShell());
+                        } else {
+                          if (mounted) setState(() => _isAuthenticating = false);
+                        }
+                      } catch (_) {
+                        if (mounted) setState(() => _isAuthenticating = false);
                       }
                     },
                   );
@@ -707,6 +791,10 @@ class _LoginViewState extends State<LoginView> {
             ),
             onPressed: () async {
               Navigator.pop(ctx);
+              setState(() {
+                _isAuthenticating = true;
+                _useFullSignIn = true;
+              });
               await controller.seedDemoData(initialRole: 'admin');
               Get.offAll(() => const MainNavigationShell());
             },
