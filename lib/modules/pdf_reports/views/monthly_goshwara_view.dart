@@ -16,11 +16,12 @@ class MonthlyGoshwaraView extends StatefulWidget {
   State<MonthlyGoshwaraView> createState() => _MonthlyGoshwaraViewState();
 }
 
-class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> with SingleTickerProviderStateMixin {
+class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
   final PdfReportsController _reportCtrl = Get.find<PdfReportsController>();
   final AuthController _authCtrl = Get.find<AuthController>();
 
-  late TabController _tabCtrl;
+  /// Index of the currently expanded section (accordion, one open at a time).
+  int? _expandedSection = 0;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -71,14 +72,12 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> with SingleTi
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this);
     _reportCtrl.selectedReportType.value = ReportType.monthlyGoshwara;
     _loadInitialData();
   }
 
   @override
   void dispose() {
-    _tabCtrl.dispose();
     _goshwaraNoCtrl.dispose();
     _naCtrl.dispose();
     _pkCtrl.dispose();
@@ -460,39 +459,240 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> with SingleTi
             onPressed: _isSaving ? null : () => _saveSettings(),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabCtrl,
-          indicatorColor: const Color(0xFF86EFAC),
-          indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-          tabs: const [
-            Tab(text: 'Staff (اسٹاف)'),
-            Tab(text: 'Facilities (وسائل)'),
-            Tab(text: 'Posts & PTC'),
-            Tab(text: 'Admin (حلقہ)'),
-          ],
-        ),
       ),
       bottomNavigationBar: _buildStickyBottomBar(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabCtrl,
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
               children: [
-                _buildStaffTab(),
-                _buildFacilitiesTab(),
-                _buildPostsAndPtcTab(),
-                _buildAdminTab(),
+                _buildOverviewHeader(),
+                const SizedBox(height: 14),
+                _accordionSection(
+                  index: 0,
+                  step: 1,
+                  icon: Icons.groups_rounded,
+                  color: const Color(0xFF1D4ED8),
+                  title: 'Staff Particulars',
+                  urdu: 'عملہ کی تفصیل',
+                  summary: _staffSummary(),
+                  complete: _staffComplete(),
+                  child: _buildStaffTab(),
+                ),
+                _accordionSection(
+                  index: 1,
+                  step: 2,
+                  icon: Icons.domain_rounded,
+                  color: const Color(0xFF0D9488),
+                  title: 'Building & Facilities',
+                  urdu: 'عمارت و سہولیات',
+                  summary: '${_classroomsCtrl.text} rooms • ${_facilityCount()}/7 facilities',
+                  complete: _classroomsCtrl.text.trim().isNotEmpty,
+                  child: _buildFacilitiesTab(),
+                ),
+                _accordionSection(
+                  index: 2,
+                  step: 3,
+                  icon: Icons.account_balance_rounded,
+                  color: const Color(0xFFB45309),
+                  title: 'Posts & PTC Fund',
+                  urdu: 'اسامیاں و پی ٹی سی',
+                  summary: 'PST ${_pstPostsCtrl.text} • Vacant ${_vacantPstCtrl.text} • PTC ${_ptcChairmanCtrl.text.trim().isEmpty ? "not set" : "set"}',
+                  complete: _ptcChairmanCtrl.text.trim().isNotEmpty,
+                  child: _buildPostsAndPtcTab(),
+                ),
+                _accordionSection(
+                  index: 3,
+                  step: 4,
+                  icon: Icons.verified_user_rounded,
+                  color: const Color(0xFF7C3AED),
+                  title: 'Circle & Signatories',
+                  urdu: 'حلقہ و دستخط',
+                  summary: _headTeacherCtrl.text.trim().isEmpty ? 'Head Teacher not set' : 'HT: ${_headTeacherCtrl.text.trim()}',
+                  complete: _headTeacherCtrl.text.trim().isNotEmpty,
+                  child: _buildAdminTab(),
+                ),
               ],
             ),
     );
   }
 
+  int _facilityCount() => [
+        _facElectricity,
+        _facWaterPipe,
+        _facWaterWell,
+        _facSolar,
+        _facBoundaryWall,
+        _facPlayArea,
+        _facOffice,
+      ].where((e) => e).length;
+
+  bool _staffComplete() =>
+      _teachers.isNotEmpty && _teachers.every((t) => (_teacherProfiles[t.id]?.fatherName ?? '').isNotEmpty);
+
+  String _staffSummary() {
+    if (_teachers.isEmpty) return 'No staff registered';
+    final done = _teachers.where((t) => (_teacherProfiles[t.id]?.fatherName ?? '').isNotEmpty).length;
+    return '${_teachers.length} staff • $done/${_teachers.length} profiles complete';
+  }
+
+  Widget _buildOverviewHeader() {
+    final sections = [
+      _staffComplete(),
+      _classroomsCtrl.text.trim().isNotEmpty,
+      _ptcChairmanCtrl.text.trim().isNotEmpty,
+      _headTeacherCtrl.text.trim().isNotEmpty,
+    ];
+    final done = sections.where((e) => e).length;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 46,
+            height: 46,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: done / 4,
+                  strokeWidth: 4.5,
+                  backgroundColor: const Color(0xFFE2E8F0),
+                  color: AppColors.primary,
+                ),
+                Text('$done/4', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.primaryDark)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  done == 4 ? 'Ready to generate' : 'Complete each section',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Details are saved and reused every month.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _accordionSection({
+    required int index,
+    required int step,
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String urdu,
+    required String summary,
+    required bool complete,
+    required Widget child,
+  }) {
+    final open = _expandedSection == index;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: open ? color.withValues(alpha: 0.5) : AppColors.border, width: open ? 1.4 : 1),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => setState(() => _expandedSection = open ? null : index),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: color, size: 21),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                '$step. $title',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(urdu, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: color)),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          summary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    complete ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                    size: 18,
+                    color: complete ? const Color(0xFF16A34A) : const Color(0xFFCBD5E1),
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 180),
+                    child: const Icon(Icons.expand_more_rounded, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: child,
+            ),
+            crossFadeState: open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+            sizeCurve: Curves.easeOut,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStaffTab() {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -577,8 +777,8 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> with SingleTi
   }
 
   Widget _buildFacilitiesTab() {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _formSectionCard(
           title: 'Building & Classrooms (اسکول عمارت و کمرے)',
@@ -618,8 +818,8 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> with SingleTi
   }
 
   Widget _buildPostsAndPtcTab() {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _formSectionCard(
           title: 'Staff Posts & Vacancies (اسکول اسامیاں)',
@@ -672,8 +872,8 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> with SingleTi
   }
 
   Widget _buildAdminTab() {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _formSectionCard(
           title: 'Constituency & Center (حلقہ و سنٹر)',
