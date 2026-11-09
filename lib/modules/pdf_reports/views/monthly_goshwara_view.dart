@@ -304,44 +304,39 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
+                      _labeledInput("Father's Name (نام والد / ولدیت)", fatherCtrl),
+                      const SizedBox(height: 10),
                       _shortFieldRow(
-                        label1: "Father's Name (ولدیت)",
-                        ctrl1: fatherCtrl,
-                        label2: 'Personal # (پرسنل نمبر)',
-                        ctrl2: personalNoCtrl,
+                        label1: 'Personal # (پرسنل نمبر)',
+                        ctrl1: personalNoCtrl,
+                        label2: 'DOB (تاریخ پیدائش)',
+                        ctrl2: dobCtrl,
                       ),
                       const SizedBox(height: 10),
                       _shortFieldRow(
-                        label1: 'DOB (تاریخ پیدائش)',
-                        ctrl1: dobCtrl,
-                        label2: 'Academic (تعلیمی قابلیت)',
-                        ctrl2: acadCtrl,
+                        label1: 'Academic (تعلیمی)',
+                        ctrl1: acadCtrl,
+                        label2: 'Prof. Qual (پیشہ ورانہ)',
+                        ctrl2: profCtrl,
                       ),
                       const SizedBox(height: 10),
                       _shortFieldRow(
-                        label1: 'Prof. Qual (پیشہ ورانہ)',
-                        ctrl1: profCtrl,
-                        label2: 'Appt Date (آغاز ملازمت)',
-                        ctrl2: apptCtrl,
+                        label1: 'Appt Date (آغاز ملازمت)',
+                        ctrl1: apptCtrl,
+                        label2: 'School Date (تاریخ ہذا اسکول)',
+                        ctrl2: transferCtrl,
                       ),
                       const SizedBox(height: 10),
                       _shortFieldRow(
-                        label1: 'School Date (تاریخ ہذا اسکول)',
-                        ctrl1: transferCtrl,
-                        label2: 'BPS (موجودہ اسکیل)',
-                        ctrl2: bpsCtrl,
+                        label1: 'BPS (موجودہ اسکیل)',
+                        ctrl1: bpsCtrl,
+                        label2: 'Scale Date (تاریخ اسکیل)',
+                        ctrl2: bpsDateCtrl,
                       ),
                       const SizedBox(height: 10),
                       _shortFieldRow(
-                        label1: 'Scale Date (تاریخ اسکیل)',
-                        ctrl1: bpsDateCtrl,
-                        label2: 'Basic Pay (تنخواہ PKR)',
-                        ctrl2: payCtrl,
-                      ),
-                      const SizedBox(height: 10),
-                      _shortFieldRow(
-                        label1: 'Village / Address (گاؤں)',
-                        ctrl1: villageCtrl,
+                        label1: 'Basic Pay (تنخواہ PKR)',
+                        ctrl1: payCtrl,
                         label2: 'Employment Type',
                         customWidget2: Container(
                           height: 40,
@@ -366,6 +361,8 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 10),
+                      _labeledInput('Village / Address (مستقل پتہ و گاؤں)', villageCtrl),
                     ],
                   ),
                 ),
@@ -845,12 +842,9 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
         _formSectionCard(
           title: 'PTC Information & Construction Fund (پیرنٹ ٹیچر کونسل)',
           children: [
-            _shortFieldRow(
-              label1: 'PTC Chairman (چیئرمین کا نام)',
-              ctrl1: _ptcChairmanCtrl,
-              label2: 'Bank Name (بینک کا نام)',
-              ctrl2: _ptcBankCtrl,
-            ),
+            _labeledInput('PTC Chairman Name (چیئرمین کا نام)', _ptcChairmanCtrl),
+            const SizedBox(height: 10),
+            _labeledInput('Bank Name & Branch (بینک و برانچ کا نام)', _ptcBankCtrl),
             const SizedBox(height: 10),
             _shortFieldRow(
               label1: 'Account No (اکاؤنٹ نمبر)',
@@ -938,51 +932,67 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
     TextEditingController? ctrl2,
     Widget? customWidget2,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label1,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 4),
-            customWidget1 ??
-                SizedBox(
-                  height: 40,
-                  child: TextField(
-                    controller: ctrl1,
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-                    decoration: _inputDeco(),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 26,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    label1,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary, height: 1.15),
                   ),
                 ),
-          ],
+              ),
+              const SizedBox(height: 4),
+              customWidget1 ??
+                  SizedBox(
+                    height: 40,
+                    child: TextField(
+                      controller: ctrl1,
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                      decoration: _inputDeco(),
+                    ),
+                  ),
+            ],
+          ),
         ),
-        const SizedBox(height: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label2,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 4),
-            customWidget2 ??
-                SizedBox(
-                  height: 40,
-                  child: TextField(
-                    controller: ctrl2,
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-                    decoration: _inputDeco(),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 26,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    label2,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary, height: 1.15),
                   ),
                 ),
-          ],
+              ),
+              const SizedBox(height: 4),
+              customWidget2 ??
+                  SizedBox(
+                    height: 40,
+                    child: TextField(
+                      controller: ctrl2,
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                      decoration: _inputDeco(),
+                    ),
+                  ),
+            ],
+          ),
         ),
       ],
     );
