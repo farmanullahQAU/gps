@@ -659,7 +659,7 @@ class _QuickAccessSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          // Row 1: Students & Student Analytics (High-Visibility Operational Cards)
+          // Row 1: Students & Primary Classes (Core Roster)
           Row(
             children: [
               Expanded(
@@ -667,7 +667,7 @@ class _QuickAccessSection extends StatelessWidget {
                   icon: Icons.school_rounded,
                   accentColor: const Color(0xFF1D4ED8), // Royal Sapphire Blue
                   title: 'Students',
-                  subtitle: 'Directory & Admissions',
+                  subtitle: 'Admissions & Roster',
                   count: '${attCtrl.schoolTotalActiveStudents.value}',
                   onTap: () => Get.to(() => const StudentsListView()),
                 ),
@@ -677,8 +677,8 @@ class _QuickAccessSection extends StatelessWidget {
                 child: _EnterpriseCard(
                   icon: Icons.meeting_room_rounded,
                   accentColor: const Color(0xFF0D9488), // Deep Teal
-                  title: 'Primary Classes',
-                  subtitle: 'Sections & Form Masters',
+                  title: 'Classes',
+                  subtitle: 'Sections & Incharges',
                   count: '${attCtrl.classesList.length}',
                   onTap: () async {
                     await adminCtrl.loadAllAdminData();
@@ -689,15 +689,15 @@ class _QuickAccessSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Row 2: Faculty & Support Staff + Student Analytics
+          // Row 2: Faculty & Staff + Attendance Analytics
           Row(
             children: [
               Expanded(
                 child: _EnterpriseCard(
                   icon: Icons.badge_rounded,
                   accentColor: const Color(0xFF7C3AED), // Academic Violet
-                  title: 'Faculty & Staff',
-                  subtitle: 'Teaching & Non-Teaching',
+                  title: 'Staff Directory',
+                  subtitle: 'Teaching & Support',
                   count: adminCtrl.teachers.isEmpty ? null : '${adminCtrl.teachers.length} Staff',
                   onTap: () async {
                     await adminCtrl.loadAllAdminData();
@@ -710,9 +710,9 @@ class _QuickAccessSection extends StatelessWidget {
                 child: _EnterpriseCard(
                   icon: Icons.query_stats_rounded,
                   accentColor: const Color(0xFFD97706), // Warm Amber / Gold
-                  title: 'Student Analytics',
-                  subtitle: 'Insights & Attendance Trends',
-                  count: 'Insights',
+                  title: 'Analytics',
+                  subtitle: 'Trends & Insights',
+                  count: 'Trends',
                   onTap: () => Get.to(() => const StudentInsightsView()),
                 ),
               ),
@@ -726,8 +726,8 @@ class _QuickAccessSection extends StatelessWidget {
                 child: _EnterpriseCard(
                   icon: Icons.table_view_rounded,
                   accentColor: const Color(0xFF0F5132), // Statutory Forest Green
-                  title: 'Monthly Goshwara',
-                  subtitle: 'ماہانہ گوشوارہ و کارکردگی',
+                  title: 'ماہانہ گوشوارہ',
+                  subtitle: 'Monthly Goshwara',
                   count: 'Statutory',
                   onTap: () => Get.to(() => const MonthlyGoshwaraView()),
                 ),
@@ -737,8 +737,8 @@ class _QuickAccessSection extends StatelessWidget {
                 child: _EnterpriseCard(
                   icon: Icons.workspace_premium_rounded,
                   accentColor: const Color(0xFF047857), // Official Emerald
-                  title: 'Leaving Certificate',
-                  subtitle: 'سرٹیفکیٹ داخل خارج (SLC)',
+                  title: 'داخل خارج',
+                  subtitle: 'Leaving Certificate',
                   count: 'SLC',
                   onTap: () => Get.to(() => const SchoolLeavingCertificateView()),
                 ),
