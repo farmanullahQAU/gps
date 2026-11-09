@@ -18,17 +18,19 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   bool _obscurePassword = true;
 
-  // Login form controllers - clean, no pre-filled credentials
+  bool _useFullSignIn = false;
   final _signInFormKey = GlobalKey<FormState>();
   final TextEditingController _loginIdentifierCtrl = TextEditingController();
   final TextEditingController _loginEmisCtrl = TextEditingController();
   final TextEditingController _loginPassCtrl = TextEditingController();
+  final TextEditingController _quickPinCtrl = TextEditingController();
 
   @override
   void dispose() {
     _loginIdentifierCtrl.dispose();
     _loginEmisCtrl.dispose();
     _loginPassCtrl.dispose();
+    _quickPinCtrl.dispose();
     super.dispose();
   }
 
@@ -61,14 +63,22 @@ class _LoginViewState extends State<LoginView> {
 
                     const SizedBox(height: 22),
 
-                    // Main Sign In Card
+                    // Main Sign In Card: Quick PIN / Biometrics if returning user, or Full Sign-in form
                     Card(
                       elevation: 10,
                       shadowColor: Colors.black38,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
-                        child: _buildSignInForm(context, controller),
+                        child: Obx(() {
+                          final cachedUser = controller.currentUser.value;
+                          final hasCached = cachedUser != null && cachedUser.name.isNotEmpty;
+
+                          if (hasCached && !_useFullSignIn) {
+                            return _buildQuickPinUnlockCard(context, controller, cachedUser);
+                          }
+                          return _buildSignInForm(context, controller, showSwitchBack: hasCached);
+                        }),
                       ),
                     ),
 
@@ -83,6 +93,184 @@ class _LoginViewState extends State<LoginView> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Fast, effortless offline PIN & Biometric unlock for returning school staff
+  Widget _buildQuickPinUnlockCard(BuildContext context, AuthController controller, UserModel user) {
+    final initial = user.name.isNotEmpty ? user.name[0].toUpperCase() : 'T';
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // User Avatar & Welcome Badge
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: const Color(0xFFDCFCE7),
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.primary, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryDark.withValues(alpha: 0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              initial,
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Welcome Back, ${user.name}',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          user.designation?.isNotEmpty == true
+              ? '${user.designation} • ${user.role.toUpperCase()}'
+              : 'Institutional Staff • ${user.role.toUpperCase()}',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+
+        const SizedBox(height: 20),
+
+        // 4-Digit Quick PIN Input Field
+        TextFormField(
+          controller: _quickPinCtrl,
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          obscureText: true,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 24, letterSpacing: 10, fontWeight: FontWeight.w800),
+          decoration: InputDecoration(
+            labelText: '4-Digit Offline PIN',
+            hintText: '••••',
+            counterText: '',
+            prefixIcon: const Icon(Icons.pin_rounded, color: AppColors.primary, size: 22),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            isDense: true,
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Submit PIN Unlock
+        Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()));
+          }
+          return SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryDark,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 2,
+              ),
+              icon: const Icon(Icons.lock_open_rounded, size: 20),
+              label: const Text(
+                'UNLOCK PORTAL',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, letterSpacing: 0.5),
+              ),
+              onPressed: () async {
+                final pin = _quickPinCtrl.text.trim();
+                if (pin.length < 4) {
+                  Get.snackbar(
+                    'Invalid PIN',
+                    'Please enter your 4-digit PIN (default: 1234)',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: const Color(0xFFFEF3C7),
+                    colorText: const Color(0xFF92400E),
+                  );
+                  return;
+                }
+                final ok = await controller.unlockWithPin(pin);
+                if (ok) {
+                  Get.offAll(() => const MainNavigationShell());
+                } else {
+                  Get.snackbar(
+                    'Incorrect PIN',
+                    'The PIN entered is incorrect. Default is 1234 or tap Switch User below.',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: const Color(0xFFFEE2E2),
+                    colorText: const Color(0xFF991B1B),
+                  );
+                }
+              },
+            ),
+          );
+        }),
+
+        // Biometric Quick Unlock (Fingerprint / Face)
+        Obx(() {
+          final enabled = controller.isBiometricEnabled.value;
+          if (!enabled) return const SizedBox.shrink();
+
+          return Padding(
+            padding: const EdgeInsets.only(top: 10.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF0F766E),
+                  side: const BorderSide(color: Color(0xFF0F766E), width: 1.4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  backgroundColor: const Color(0xFFF0FDFA),
+                ),
+                icon: const Icon(Icons.fingerprint_rounded, size: 22),
+                label: const Text(
+                  'UNLOCK WITH FINGERPRINT',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, letterSpacing: 0.3),
+                ),
+                onPressed: () async {
+                  final ok = await controller.loginWithBiometrics();
+                  if (ok) {
+                    Get.offAll(() => const MainNavigationShell());
+                  }
+                },
+              ),
+            ),
+          );
+        }),
+
+        const SizedBox(height: 16),
+
+        // Switch User / Use Full Password Option
+        TextButton.icon(
+          onPressed: () {
+            setState(() {
+              _useFullSignIn = true;
+              _loginIdentifierCtrl.text = user.email.isNotEmpty ? user.email : (user.phone ?? '');
+            });
+          },
+          icon: const Icon(Icons.switch_account_rounded, size: 16, color: AppColors.primary),
+          label: const Text(
+            'Switch User or Sign In with Password',
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.primary),
+          ),
+        ),
+      ],
     );
   }
 
@@ -126,15 +314,26 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _buildSignInForm(BuildContext context, AuthController controller) {
+  Widget _buildSignInForm(BuildContext context, AuthController controller, {bool showSwitchBack = false}) {
     return Form(
       key: _signInFormKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Welcome Back',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Sign In to School',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+              if (showSwitchBack)
+                TextButton(
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                  onPressed: () => setState(() => _useFullSignIn = false),
+                  child: const Text('Back to PIN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                ),
+            ],
           ),
           const SizedBox(height: 3),
           Text(

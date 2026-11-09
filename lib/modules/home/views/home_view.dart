@@ -12,6 +12,8 @@ import '../../admin/views/admin_setup_view.dart';
 import '../../attendance/attendance_controller.dart';
 import '../../attendance/views/student_insights_view.dart';
 import '../../auth/auth_controller.dart';
+import '../../pdf_reports/views/monthly_goshwara_view.dart';
+import '../../pdf_reports/views/school_leaving_certificate_view.dart';
 import '../../students/views/students_list_view.dart';
 
 // ---------------------------------------------------------------------------
@@ -712,6 +714,33 @@ class _QuickAccessSection extends StatelessWidget {
                   subtitle: 'Insights & Attendance Trends',
                   count: 'Insights',
                   onTap: () => Get.to(() => const StudentInsightsView()),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Row 3: Statutory Reports & Certificates (Monthly Goshwara & SLC)
+          Row(
+            children: [
+              Expanded(
+                child: _EnterpriseCard(
+                  icon: Icons.table_view_rounded,
+                  accentColor: const Color(0xFF0F5132), // Statutory Forest Green
+                  title: 'Monthly Goshwara',
+                  subtitle: 'ماہانہ گوشوارہ و کارکردگی',
+                  count: 'Statutory',
+                  onTap: () => Get.to(() => const MonthlyGoshwaraView()),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _EnterpriseCard(
+                  icon: Icons.workspace_premium_rounded,
+                  accentColor: const Color(0xFF047857), // Official Emerald
+                  title: 'Leaving Certificate',
+                  subtitle: 'سرٹیفکیٹ داخل خارج (SLC)',
+                  count: 'SLC',
+                  onTap: () => Get.to(() => const SchoolLeavingCertificateView()),
                 ),
               ),
             ],
