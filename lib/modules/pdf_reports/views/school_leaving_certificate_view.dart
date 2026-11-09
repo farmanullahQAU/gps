@@ -209,12 +209,12 @@ class _SchoolLeavingCertificateViewState extends State<SchoolLeavingCertificateV
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'School Leaving Certificate (SLC)',
-              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white),
+              'School Leaving Certificate',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
             ),
             Text(
-              'سرٹیفکیٹ داخل خارج و چال چلن • محکمہ تعلیم خیبر پختونخوا',
-              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w500, color: Color(0xFFA7F3D0)),
+              'سرٹیفکیٹ داخل خارج و چال چلن',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFFA7F3D0)),
             ),
           ],
         ),
@@ -816,7 +816,7 @@ class _SchoolLeavingCertificateViewState extends State<SchoolLeavingCertificateV
       children: [
         Text(
           label,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
         ),

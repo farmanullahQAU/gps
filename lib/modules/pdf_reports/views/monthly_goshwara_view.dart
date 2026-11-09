@@ -441,12 +441,12 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Monthly Performance Goshwara',
-              style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white),
+              'Monthly Goshwara',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
             ),
             Text(
-              'ماہانہ گوشوارہ و کارکردگی رپورٹ • $monthName',
-              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w500, color: Color(0xFFA7F3D0)),
+              monthName,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFFA7F3D0)),
             ),
           ],
         ),
@@ -938,54 +938,51 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
     TextEditingController? ctrl2,
     Widget? customWidget2,
   }) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label1,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 4),
-              customWidget1 ??
-                  SizedBox(
-                    height: 40,
-                    child: TextField(
-                      controller: ctrl1,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-                      decoration: _inputDeco(),
-                    ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label1,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 4),
+            customWidget1 ??
+                SizedBox(
+                  height: 40,
+                  child: TextField(
+                    controller: ctrl1,
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                    decoration: _inputDeco(),
                   ),
-            ],
-          ),
+                ),
+          ],
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label2,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 4),
-              customWidget2 ??
-                  SizedBox(
-                    height: 40,
-                    child: TextField(
-                      controller: ctrl2,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-                      decoration: _inputDeco(),
-                    ),
+        const SizedBox(height: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label2,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 4),
+            customWidget2 ??
+                SizedBox(
+                  height: 40,
+                  child: TextField(
+                    controller: ctrl2,
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                    decoration: _inputDeco(),
                   ),
-            ],
-          ),
+                ),
+          ],
         ),
       ],
     );
@@ -997,6 +994,8 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
       children: [
         Text(
           label,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 4),
