@@ -12,20 +12,22 @@ import '../../settings/views/settings_view.dart';
 import '../../students/views/students_list_view.dart';
 import '../../sync/sync_controller.dart';
 import '../../sync/views/sync_dashboard_view.dart';
+import '../../utilities/views/utilities_view.dart';
 import 'home_view.dart';
 
 class MainNavigationController extends GetxController {
   final RxInt selectedIndex = 0.obs;
 
   void changeTab(int index) {
-    selectedIndex.value = index.clamp(0, 2);
+    selectedIndex.value = index.clamp(0, 3);
   }
 }
 
-/// Primary 3-tab application shell:
-/// Tab 0: Home (Executive Dashboard & Quick Actions)
-/// Tab 1: Reports (Attendance Register, Gazette & Monthly Analytics)
-/// Tab 2: Settings (Logged-in Profile, School Admin, Preferences & Sign Out)
+/// Primary 4-tab application shell:
+/// Tab 0: Home (Executive Dashboard & Core Rosters)
+/// Tab 1: Reports (Official Attendance Registers, Goshwara & SLC Hub)
+/// Tab 2: Utilities (Offline Database Snapshots, Cloud Sync, Alerts, Scanner, Calendar)
+/// Tab 3: Settings (Logged-in Profile, Preferences, Language, Biometrics & Sign Out)
 /// Attendance Register is accessed directly via the Home Floating Action Button or quick actions.
 class MainNavigationShell extends StatelessWidget {
   const MainNavigationShell({super.key});
@@ -39,6 +41,7 @@ class MainNavigationShell extends StatelessWidget {
       final pages = const <Widget>[
         HomeView(),
         PdfReportsView(),
+        UtilitiesView(),
         SettingsView(showAppBar: false),
       ];
 
@@ -54,13 +57,18 @@ class MainNavigationShell extends StatelessWidget {
           label: 'pdf_reports'.tr,
         ),
         NavigationDestination(
+          icon: const Icon(Icons.handyman_outlined),
+          selectedIcon: const Icon(Icons.handyman_rounded, color: AppColors.primaryDark),
+          label: 'utilities'.tr,
+        ),
+        NavigationDestination(
           icon: const Icon(Icons.settings_outlined),
           selectedIcon: const Icon(Icons.settings_rounded, color: AppColors.primaryDark),
           label: 'settings'.tr,
         ),
       ];
 
-      final index = navCtrl.selectedIndex.value.clamp(0, 2);
+      final index = navCtrl.selectedIndex.value.clamp(0, 3);
 
       return Scaffold(
         backgroundColor: AppColors.bgLight,
@@ -123,12 +131,23 @@ class MainNavigationShell extends StatelessWidget {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     title: Text(
-                      'settings'.tr,
+                      'utilities'.tr,
                       style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800),
                     ),
                     actions: const [ShellAppBarActions()],
                   )
-                : null,
+                : (index == 3)
+                    ? AppBar(
+                        backgroundColor: AppColors.primaryDark,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        title: Text(
+                          'settings'.tr,
+                          style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800),
+                        ),
+                        actions: const [ShellAppBarActions()],
+                      )
+                    : null,
         body: IndexedStack(index: index, children: pages),
         floatingActionButton: index == 0
             ? FloatingActionButton(

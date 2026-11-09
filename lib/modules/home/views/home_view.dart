@@ -12,8 +12,6 @@ import '../../admin/views/admin_setup_view.dart';
 import '../../attendance/attendance_controller.dart';
 import '../../attendance/views/student_insights_view.dart';
 import '../../auth/auth_controller.dart';
-import '../../pdf_reports/views/monthly_goshwara_view.dart';
-import '../../pdf_reports/views/school_leaving_certificate_view.dart';
 import '../../students/views/students_list_view.dart';
 
 // ---------------------------------------------------------------------------
@@ -659,7 +657,7 @@ class _QuickAccessSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          // Row 1: Students & Student Analytics (High-Visibility)
+          // Row 1: Students & Student Analytics (High-Visibility Operational Cards)
           Row(
             children: [
               Expanded(
@@ -675,22 +673,6 @@ class _QuickAccessSection extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _EnterpriseCard(
-                  icon: Icons.query_stats_rounded,
-                  accentColor: const Color(0xFFD97706), // Warm Amber / Gold
-                  title: 'Student Analytics',
-                  subtitle: 'Insights & Attendance Trends',
-                  count: 'Insights',
-                  onTap: () => Get.to(() => const StudentInsightsView()),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Row 2: Classes & Academic Calendar
-          Row(
-            children: [
-              Expanded(
-                child: _EnterpriseCard(
                   icon: Icons.meeting_room_rounded,
                   accentColor: const Color(0xFF0D9488), // Deep Teal
                   title: 'Primary Classes',
@@ -702,24 +684,10 @@ class _QuickAccessSection extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _EnterpriseCard(
-                  icon: Icons.event_available_rounded,
-                  accentColor: const Color(0xFF059669), // Emerald
-                  title: 'School Calendar',
-                  subtitle: 'Holidays & Vacations',
-                  count: adminCtrl.holidays.isEmpty ? null : '${adminCtrl.holidays.length} Dates',
-                  onTap: () async {
-                    await adminCtrl.loadAllAdminData();
-                    Get.to(() => const HolidaysManagementSubPage());
-                  },
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
-          // Row 3: Staff Directory & Monthly Goshwara
+          // Row 2: Faculty & Support Staff + Student Analytics
           Row(
             children: [
               Expanded(
@@ -727,7 +695,7 @@ class _QuickAccessSection extends StatelessWidget {
                   icon: Icons.badge_rounded,
                   accentColor: const Color(0xFF7C3AED), // Academic Violet
                   title: 'Faculty & Staff',
-                  subtitle: 'Teachers & Designations',
+                  subtitle: 'Teaching & Non-Teaching',
                   count: adminCtrl.teachers.isEmpty ? null : '${adminCtrl.teachers.length} Staff',
                   onTap: () async {
                     await adminCtrl.loadAllAdminData();
@@ -738,56 +706,16 @@ class _QuickAccessSection extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _EnterpriseCard(
-                  icon: Icons.table_view_rounded,
-                  accentColor: const Color(0xFF0F5132), // Statutory Forest Green
-                  title: 'Monthly Goshwara',
-                  subtitle: 'ماہانہ گوشوارہ و کارکردگی',
-                  count: 'Statutory',
-                  onTap: () => Get.to(() => const MonthlyGoshwaraView()),
+                  icon: Icons.query_stats_rounded,
+                  accentColor: const Color(0xFFD97706), // Warm Amber / Gold
+                  title: 'Student Analytics',
+                  subtitle: 'Insights & Attendance Trends',
+                  count: 'Insights',
+                  onTap: () => Get.to(() => const StudentInsightsView()),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Row 4: School Leaving Certificate (SLC) & School Administration
-          if (isAdmin)
-            Row(
-              children: [
-                Expanded(
-                  child: _EnterpriseCard(
-                    icon: Icons.workspace_premium_rounded,
-                    accentColor: const Color(0xFF047857),
-                    title: 'Leaving Certificate',
-                    subtitle: 'سرٹیفکیٹ داخل خارج',
-                    count: 'SLC',
-                    onTap: () => Get.to(() => const SchoolLeavingCertificateView()),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _EnterpriseCard(
-                    icon: Icons.admin_panel_settings_rounded,
-                    accentColor: const Color(0xFFB45309), // Burnished Amber
-                    title: 'School Admin',
-                    subtitle: 'Timings & Governance',
-                    count: 'Admin',
-                    onTap: () async {
-                      await adminCtrl.loadAllAdminData();
-                      Get.to(() => const AdminSetupView());
-                    },
-                  ),
-                ),
-              ],
-            )
-          else
-            _EnterpriseCard(
-              icon: Icons.workspace_premium_rounded,
-              accentColor: const Color(0xFF047857),
-              title: 'School Leaving Certificate',
-              subtitle: 'سرٹیفکیٹ داخل خارج و چال چلن',
-              count: 'SLC',
-              onTap: () => Get.to(() => const SchoolLeavingCertificateView()),
-            ),
         ],
       );
     });
