@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -1113,6 +1114,19 @@ class ClassesManagementSubPage extends StatelessWidget {
         ),
         backgroundColor: AppColors.primaryDark,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: 'Import Classes CSV',
+            icon: const Icon(Icons.upload_file_rounded),
+            onPressed: () => _showAdminCsvImportSheet(
+              context: context,
+              title: 'Import Classes & Sections (CSV)',
+              formatHint: 'Class Name, Numeric Level, Section Name\nExample:\nClass Kachi, 0, Section A\nClass 1st, 1, Section A',
+              hintText: 'Class Kachi, 0, Section A\nClass 1st, 1, Section A',
+              onImport: (csv) => adminCtrl.importClassesFromCsv(csv),
+            ),
+          ),
+        ],
       ),
       body: Obx(() {
         final isAdmin = authCtrl.currentUser.value?.isAdmin ?? false;
@@ -1623,6 +1637,19 @@ class TeachersManagementSubPage extends StatelessWidget {
         ),
         backgroundColor: AppColors.primaryDark,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: 'Import Staff CSV',
+            icon: const Icon(Icons.upload_file_rounded),
+            onPressed: () => _showAdminCsvImportSheet(
+              context: context,
+              title: 'Import Faculty & Staff (CSV)',
+              formatHint: 'Full Name, Email, Phone, Role, Designation, CNIC, PIN\nExample:\nAli Khan, ali@gps.edu.pk, 03001234567, teacher, PST, 17301-1234567-1, 1234',
+              hintText: 'Ali Khan, ali@gps.edu.pk, 03001234567, teacher, PST, 17301-1234567-1, 1234',
+              onImport: (csv) => adminCtrl.importStaffFromCsv(csv),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -2596,4 +2623,139 @@ class _ApprovalsAuditSubPageState extends State<ApprovalsAuditSubPage> {
       },
     );
   }
+}
+
+void _showAdminCsvImportSheet({
+  required BuildContext context,
+  required String title,
+  required String formatHint,
+  required String hintText,
+  required Future<int> Function(String csv) onImport,
+}) {
+  final csvCtrl = TextEditingController();
+  String? selectedFileName;
+  bool isImporting = false;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    showDragHandle: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+    ),
+    builder: (ctx) => StatefulBuilder(
+      builder: (context, setModalState) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).viewInsets.bottom + 20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Upload a .csv file from your device or paste rows below.',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  icon: const Icon(Icons.folder_open_rounded, size: 18),
+                  label: Text(selectedFileName ?? 'Choose .CSV File'),
+                  onPressed: isImporting
+                      ? null
+                      : () async {
+                          final picked = await FilePicker.pickFile(
+                            type: FileType.custom,
+                            allowedExtensions: ['csv', 'txt'],
+                          );
+                          if (picked != null && picked.path != null) {
+                            final file = File(picked.path!);
+                            final content = await file.readAsString();
+                            setModalState(() {
+                              selectedFileName = picked.name;
+                              csvCtrl.text = content;
+                            });
+                          }
+                        },
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgLight,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text(
+                    formatHint,
+                    style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppColors.textSecondary),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: csvCtrl,
+                  maxLines: 6,
+                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryDark,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: isImporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.check_circle_outline_rounded, size: 18),
+                    label: Text(
+                      isImporting ? 'Importing...' : 'Import CSV Rows',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    onPressed: isImporting
+                        ? null
+                        : () async {
+                            final raw = csvCtrl.text.trim();
+                            if (raw.isEmpty) {
+                              Get.snackbar('Input Required', 'Please select a CSV file or paste rows first.');
+                              return;
+                            }
+                            setModalState(() => isImporting = true);
+                            try {
+                              await onImport(raw);
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            } finally {
+                              if (ctx.mounted) setModalState(() => isImporting = false);
+                            }
+                          },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }

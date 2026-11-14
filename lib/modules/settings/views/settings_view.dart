@@ -475,19 +475,75 @@ class SettingsView extends StatelessWidget {
             const SizedBox(height: 8),
             Container(
               decoration: _cardBox(),
-              child: ListTile(
-                leading: const Icon(Icons.logout_rounded, color: AppColors.absent),
-                title: const Text('Sign Out', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.absent)),
-                subtitle: const Text('Log out of this device session', style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary)),
-                onTap: () async {
-                  await authCtrl.logout();
-                  Get.offAll(() => LoginView());
-                },
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.logout_rounded, color: AppColors.absent),
+                    title: const Text('Sign Out', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.absent)),
+                    subtitle: const Text('Log out of this device session', style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary)),
+                    onTap: () async {
+                      await authCtrl.logout();
+                      Get.offAll(() => LoginView());
+                    },
+                  ),
+                  const Divider(height: 1, indent: 56, color: AppColors.border),
+                  ListTile(
+                    leading: const Icon(Icons.delete_forever_rounded, color: Color(0xFFDC2626)),
+                    title: const Text('Clear All Database Data', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Color(0xFFDC2626))),
+                    subtitle: const Text('Wipe all local tables and session to start fresh with actual school data', style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary)),
+                    trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+                    onTap: () => _confirmClearAllData(context, authCtrl),
+                  ),
+                ],
               ),
             ),
           ],
         );
       }),
+    );
+  }
+
+  void _confirmClearAllData(BuildContext context, AuthController authCtrl) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.absent, size: 26),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Clear All Database Data?',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This will permanently delete all records across all database tables (schools, users, classes, sections, students, and attendance records) and sign you out so you can set up fresh with actual school data.\n\nThis action cannot be undone. Are you sure you want to proceed?',
+          style: TextStyle(fontSize: 12.5, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.absent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await authCtrl.clearAllDatabaseData();
+              Get.offAll(() => LoginView());
+            },
+            child: const Text('Clear All Tables', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 

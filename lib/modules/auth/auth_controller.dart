@@ -497,6 +497,56 @@ class AuthController extends GetxController {
     }
   }
 
+  /// Wipes all local SQLite tables clean, purges cached sessions, and resets in-memory controllers.
+  /// Used when switching from demo/test data to actual real school records.
+  Future<void> clearAllDatabaseData() async {
+    try {
+      isLoading.value = true;
+      await authRepository.db.clearAllData();
+      await authRepository.logout();
+      currentUser.value = null;
+
+      if (Get.isRegistered<AttendanceController>()) {
+        final att = Get.find<AttendanceController>();
+        att.classesList.clear();
+        att.sectionsList.clear();
+        att.studentsList.clear();
+        att.selectedClass.value = null;
+        att.selectedSection.value = null;
+      }
+      if (Get.isRegistered<AdminController>()) {
+        Get.find<AdminController>().resetState();
+      }
+      if (Get.isRegistered<StudentsController>()) {
+        final stu = Get.find<StudentsController>();
+        stu.students.clear();
+      }
+      if (Get.isRegistered<SyncController>()) {
+        final sc = Get.find<SyncController>();
+        sc.pendingCount.value = 0;
+      }
+
+      Get.snackbar(
+        'Database Cleared',
+        'All database tables have been wiped clean. You can now start with actual school data.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFDCFCE7),
+        colorText: const Color(0xFF166534),
+        duration: const Duration(seconds: 4),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Clear Failed',
+        'Failed to clear database: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFFEE2E2),
+        colorText: const Color(0xFF991B1B),
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<bool> updateUserProfileAndCredentials({
     required String userId,
     String? name,

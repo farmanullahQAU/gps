@@ -249,6 +249,105 @@ class AdminController extends GetxController {
     Get.snackbar('Staff Registered', 'Created credentials for $name with individual login.');
   }
 
+  /// Bulk import classes & sections from CSV (Format: Class Name, Numeric Level, Section Name)
+  Future<int> importClassesFromCsv(String csvContent) async {
+    final sid = currentSchoolId;
+    if (sid.isEmpty) return 0;
+
+    final lines = csvContent
+        .split(RegExp(r'\r?\n'))
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+
+    int imported = 0;
+    for (int i = 0; i < lines.length; i++) {
+      final cols = lines[i].split(',').map((c) => c.trim()).toList();
+      if (cols.isEmpty || cols[0].isEmpty) continue;
+
+      final firstLower = cols[0].toLowerCase();
+      if (i == 0 && (firstLower.contains('class') && firstLower.contains('name') || firstLower == 'classname')) {
+        continue;
+      }
+
+      final className = cols[0];
+      final level = cols.length > 1 ? (int.tryParse(cols[1]) ?? 0) : 0;
+      final sectionName = (cols.length > 2 && cols[2].isNotEmpty) ? cols[2] : 'Section A';
+
+      await studentRepository.createClassWithSection(
+        schoolId: sid,
+        className: className,
+        numericLevel: level,
+        sectionName: sectionName,
+      );
+      imported++;
+    }
+
+    await loadAllAdminData();
+    if (Get.isRegistered<AttendanceController>()) {
+      await Get.find<AttendanceController>().loadClasses();
+    }
+    Get.snackbar(
+      'Classes CSV Import Complete',
+      'Successfully imported $imported class/section entries.',
+    );
+    return imported;
+  }
+
+  /// Bulk import staff/teachers from CSV (Format: Full Name, Email, Phone, Role, Designation, CNIC, PIN)
+  Future<int> importStaffFromCsv(String csvContent) async {
+    final sid = currentSchoolId;
+    if (sid.isEmpty) return 0;
+
+    final lines = csvContent
+        .split(RegExp(r'\r?\n'))
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+
+    int imported = 0;
+    for (int i = 0; i < lines.length; i++) {
+      final cols = lines[i].split(',').map((c) => c.trim()).toList();
+      if (cols.isEmpty || cols[0].isEmpty) continue;
+
+      final firstLower = cols[0].toLowerCase();
+      if (i == 0 && (firstLower.contains('name') || firstLower == 'staff')) {
+        continue;
+      }
+
+      final name = cols[0];
+      final email = cols.length > 1 ? cols[1] : '';
+      final phone = cols.length > 2 ? cols[2] : '';
+      final rawRole = cols.length > 3 ? cols[3].toLowerCase() : 'teacher';
+      final role = (rawRole == 'admin' || rawRole == 'head_teacher') ? rawRole : 'teacher';
+      final designation = (cols.length > 4 && cols[4].isNotEmpty) ? cols[4] : 'PST';
+      final cnic = (cols.length > 5 && cols[5].isNotEmpty) ? cols[5] : null;
+      final pinCode = (cols.length > 6 && cols[6].isNotEmpty) ? cols[6] : '1234';
+
+      await studentRepository.createTeacher(
+        schoolId: sid,
+        name: name,
+        email: email,
+        phone: phone,
+        role: role,
+        pinCode: pinCode,
+        cnic: cnic,
+        designation: designation,
+      );
+      imported++;
+    }
+
+    await loadAllAdminData();
+    if (Get.isRegistered<AttendanceController>()) {
+      await Get.find<AttendanceController>().refreshSchoolWideKpis();
+    }
+    Get.snackbar(
+      'Staff CSV Import Complete',
+      'Successfully imported $imported staff accounts.',
+    );
+    return imported;
+  }
+
   Future<void> updateTeacherProfile({
     required String teacherId,
     String? name,

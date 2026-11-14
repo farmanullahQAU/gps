@@ -308,6 +308,14 @@ class _LoginViewState extends State<LoginView> {
             style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.primary),
           ),
         ),
+        TextButton.icon(
+          onPressed: () => _confirmClearAllData(context, controller),
+          icon: const Icon(Icons.delete_sweep_rounded, size: 15, color: Color(0xFFEF4444)),
+          label: const Text(
+            'Clear Stored Data (Start Fresh with Real School)',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFEF4444)),
+          ),
+        ),
       ],
     );
   }
@@ -741,16 +749,36 @@ class _LoginViewState extends State<LoginView> {
   Widget _buildFooter(BuildContext context, AuthController controller) {
     return Column(
       children: [
-        TextButton(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFFD1FAE5),
-            visualDensity: VisualDensity.compact,
-          ),
-          onPressed: () => _confirmLoadDemo(context, controller),
-          child: const Text(
-            'Explore with Sample Demo School',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
-          ),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFD1FAE5),
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: () => _confirmLoadDemo(context, controller),
+              child: const Text(
+                'Explore Sample Demo',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+              ),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFFCA5A5),
+                visualDensity: VisualDensity.compact,
+              ),
+              icon: const Icon(Icons.delete_sweep_rounded, size: 14),
+              onPressed: () => _confirmClearAllData(context, controller),
+              label: const Text(
+                'Clear Database Tables',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
@@ -759,6 +787,59 @@ class _LoginViewState extends State<LoginView> {
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+
+  void _confirmClearAllData(BuildContext context, AuthController controller) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.absent, size: 26),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Clear All Database Data?',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This will permanently delete all records across all database tables (schools, users, classes, sections, students, attendance records, and audit logs) and clear all saved sessions on this device.\n\nAre you sure you want to proceed and start fresh with actual school data?',
+          style: TextStyle(fontSize: 12.5, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.absent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() {
+                _isAuthenticating = true;
+                _useFullSignIn = true;
+                _quickPinCtrl.clear();
+                _loginIdentifierCtrl.clear();
+                _loginPassCtrl.clear();
+              });
+              await controller.clearAllDatabaseData();
+              if (mounted) {
+                setState(() => _isAuthenticating = false);
+              }
+            },
+            child: const Text('Clear All Tables', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
