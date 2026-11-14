@@ -325,12 +325,37 @@ class PdfReportsController extends GetxController {
     final attendanceCtrl = Get.find<AttendanceController>();
     final authCtrl = Get.find<AuthController>();
 
-    final schoolClass = attendanceCtrl.selectedClass.value;
-    final section = attendanceCtrl.selectedSection.value;
     final schoolId = authCtrl.currentUser.value?.schoolId;
-
     if (schoolId == null || schoolId.isEmpty) {
       throw Exception('No active authenticated school found.');
+    }
+
+    if (attendanceCtrl.classesList.isEmpty || attendanceCtrl.selectedClass.value == null) {
+      await attendanceCtrl.loadClasses();
+    }
+
+    var schoolClass = attendanceCtrl.selectedClass.value;
+    var section = attendanceCtrl.selectedSection.value;
+
+    // For Monthly Goshwara (which is a school-wide summary across all classes),
+    // provide an automatic fallback class and section if none is currently selected.
+    if ((schoolClass == null || section == null) && selectedReportType.value == ReportType.monthlyGoshwara) {
+      final allClasses = await studentRepository.getClasses(schoolId);
+      if (allClasses.isNotEmpty) {
+        schoolClass = allClasses.first;
+        final allSecs = await studentRepository.getSections(schoolClass.id, schoolId: schoolId);
+        section = allSecs.isNotEmpty
+            ? allSecs.first
+            : Section(
+                id: 'sec_${schoolClass.id}_default',
+                schoolId: schoolId,
+                classId: schoolClass.id,
+                name: 'Section A',
+                createdAt: 0,
+                updatedAt: 0,
+                revision: 0,
+              );
+      }
     }
 
     if (schoolClass == null || section == null) {

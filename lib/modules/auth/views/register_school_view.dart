@@ -62,6 +62,14 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
   }
 
   void _showSuccessDialog(BuildContext context, dynamic result) {
+    final bool isPending = result.isPendingApproval == true;
+    final String statusText = isPending ? 'Status: Pending Verification' : 'Status: Ready & Offline Enabled';
+    final String bodyMessage = (result.message != null && (result.message as String).isNotEmpty)
+        ? result.message as String
+        : (isPending
+            ? 'Your school registration has been recorded. Once verified by the administrator, you and your faculty can sign in.'
+            : 'Your school and primary classes have been initialized. You can sign in and begin using the app immediately.');
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -70,11 +78,18 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
         titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
         contentPadding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
         actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 26),
-            SizedBox(width: 10),
-            Text('Registration Submitted', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Icon(
+              isPending ? Icons.schedule_rounded : Icons.check_circle_rounded,
+              color: isPending ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+              size: 26,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              isPending ? 'Registration Submitted' : 'Registration Complete',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
           ],
         ),
         content: Column(
@@ -84,27 +99,36 @@ class _RegisterSchoolViewState extends State<RegisterSchoolView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
+                color: isPending ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFBBF24)),
+                border: Border.all(color: isPending ? const Color(0xFFFBBF24) : const Color(0xFF86EFAC)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.schedule_rounded, color: Color(0xFFB45309), size: 20),
+                  Icon(
+                    isPending ? Icons.schedule_rounded : Icons.verified_rounded,
+                    color: isPending ? const Color(0xFFB45309) : const Color(0xFF15803D),
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${result.schoolName} (${result.schoolCode})\nStatus: Pending Verification',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF92400E), height: 1.3),
+                      '${result.schoolName} (${result.schoolCode})\n$statusText',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isPending ? const Color(0xFF92400E) : const Color(0xFF166534),
+                        height: 1.3,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Your school registration has been recorded. Once verified by the administrator, you and your faculty can sign in.',
-              style: TextStyle(fontSize: 12, height: 1.4, color: AppColors.textSecondary),
+            Text(
+              bodyMessage,
+              style: const TextStyle(fontSize: 12, height: 1.4, color: AppColors.textSecondary),
             ),
           ],
         ),

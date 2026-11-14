@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../attendance/attendance_controller.dart';
 import '../../auth/auth_controller.dart';
 import '../pdf_generator_service.dart';
 import '../pdf_reports_controller.dart';
@@ -105,14 +106,22 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
   }
 
   Future<void> _loadInitialData() async {
-    setState(() => _isLoading = true);
+    // Note: _isLoading is initialized to true by default; avoid synchronous setState in initState
     final schoolId = _authCtrl.currentUser.value?.schoolId ?? '';
     if (schoolId.isEmpty) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
       return;
     }
 
     try {
+      // Ensure classes and attendance state are hydrated if opened directly from Home
+      if (Get.isRegistered<AttendanceController>()) {
+        final att = Get.find<AttendanceController>();
+        if (att.classesList.isEmpty) {
+          await att.loadClasses();
+        }
+      }
+
       final s = await _reportCtrl.studentRepository.getSchoolSettings(schoolId);
       final tList = await _reportCtrl.studentRepository.getTeachers(schoolId);
       final profiles = <String, TeacherGoshwaraProfile>{};
@@ -120,6 +129,7 @@ class _MonthlyGoshwaraViewState extends State<MonthlyGoshwaraView> {
         profiles[t.id] = await _reportCtrl.studentRepository.getTeacherGoshwaraProfile(t.id);
       }
 
+      if (!mounted) return;
       setState(() {
         _currentSettings = s;
         _teachers = tList;

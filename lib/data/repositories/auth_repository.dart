@@ -398,6 +398,19 @@ class AuthRepository {
         final isPending = data['pendingApproval'] == true;
         final msg = data['message'] as String? ?? 'School registration submitted.';
 
+        // Also save locally so offline logins and classes are ready right away
+        await _saveSchoolToLocalDb(
+          schoolName: sName,
+          schoolCode: sCode,
+          adminName: aName,
+          adminPhone: aPhone,
+          adminEmail: aEmail,
+          adminPin: aPin,
+          district: district?.trim() ?? 'Peshawar',
+          tehsil: tehsil?.trim() ?? 'City Peshawar',
+          circleOffice: circleOffice?.trim() ?? 'ASDEO Circle City-I',
+        );
+
         return SchoolRegistrationResult(
           success: true,
           isPendingApproval: isPending,
@@ -417,8 +430,158 @@ class AuthRepository {
       if (errStr.contains('required') || errStr.contains('Registration failed')) {
         rethrow;
       }
-      throw Exception('Online internet connection is required to submit your school registration for official department approval.');
+
+      // Offline fallback: when no internet connection is available in remote areas,
+      // create the school, head teacher admin, and standard primary classes locally in SQLite.
+      return await _saveSchoolToLocalDb(
+        schoolName: sName,
+        schoolCode: sCode,
+        adminName: aName,
+        adminPhone: aPhone,
+        adminEmail: aEmail,
+        adminPassword: adminPassword,
+        adminPin: aPin,
+        district: district?.trim() ?? 'Peshawar',
+        tehsil: tehsil?.trim() ?? 'City Peshawar',
+        circleOffice: circleOffice?.trim() ?? 'ASDEO Circle City-I',
+        isOfflineMode: true,
+      );
     }
+  }
+
+  Future<SchoolRegistrationResult> _saveSchoolToLocalDb({
+    required String schoolName,
+    required String schoolCode,
+    required String adminName,
+    required String adminPhone,
+    required String adminEmail,
+    String? adminPassword,
+    required String adminPin,
+    required String district,
+    required String tehsil,
+    required String circleOffice,
+    bool isOfflineMode = false,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final schoolId = 'school_${schoolCode.toLowerCase()}';
+    final adminId = 'usr_admin_${schoolCode.toLowerCase()}';
+    final email = adminEmail.isNotEmpty ? adminEmail : 'headteacher_${schoolCode.toLowerCase()}@kpk.edu.pk';
+
+    // 1. School record
+    await db.into(db.schools).insertOnConflictUpdate(
+          SchoolsCompanion.insert(
+            id: schoolId,
+            name: schoolName,
+            code: schoolCode,
+            academicYearStart: '2026-04-01',
+            academicYearEnd: '2027-03-31',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    // 2. School Settings
+    await db.studentDao.upsertSchoolSettings(
+      SchoolSettingsModel(
+        schoolId: schoolId,
+        schoolType: 'GPS',
+        district: district,
+        tehsil: tehsil,
+        circleOffice: circleOffice,
+        unionCouncil: '',
+        climateZone: 'summer_zone',
+        openingTime: '08:00',
+        closingTime: '13:30',
+        lateCutoffTime: '08:15',
+        headTeacherName: adminName,
+        deoName: 'DEO (Male) Elementary & Secondary Education $district',
+        workingDaysCsv: '1,2,3,4,5,6',
+      ),
+    );
+
+    // 3. Head Teacher User
+    await db.into(db.users).insertOnConflictUpdate(
+          UsersCompanion.insert(
+            id: adminId,
+            schoolId: schoolId,
+            name: adminName,
+            email: Value(email),
+            phone: Value(adminPhone),
+            role: 'admin',
+            pinCodeHash: Value(adminPin),
+            designation: const Value('Head Teacher'),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    // 4. KPK Primary Classes (Kachi, Class 1 to Class 5)
+    final kpkClasses = [
+      {'id': 'cls_${schoolCode.toLowerCase()}_kachi', 'name': 'Class Kachi (کچی)', 'level': 0},
+      {'id': 'cls_${schoolCode.toLowerCase()}_1', 'name': 'Class Pakki / 1st (پکی)', 'level': 1},
+      {'id': 'cls_${schoolCode.toLowerCase()}_2', 'name': 'Class 2nd (دوم)', 'level': 2},
+      {'id': 'cls_${schoolCode.toLowerCase()}_3', 'name': 'Class 3rd (سوم)', 'level': 3},
+      {'id': 'cls_${schoolCode.toLowerCase()}_4', 'name': 'Class 4th (چہارم)', 'level': 4},
+      {'id': 'cls_${schoolCode.toLowerCase()}_5', 'name': 'Class 5th (پنجم)', 'level': 5},
+    ];
+
+    for (final c in kpkClasses) {
+      final classId = c['id'] as String;
+      await db.into(db.classes).insertOnConflictUpdate(
+            ClassesCompanion.insert(
+              id: classId,
+              schoolId: schoolId,
+              name: c['name'] as String,
+              numericLevel: Value((c['level'] as num).toInt()),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+      await db.into(db.sections).insertOnConflictUpdate(
+            SectionsCompanion.insert(
+              id: 'sec_${classId}_a',
+              schoolId: schoolId,
+              classId: classId,
+              name: 'Section A',
+              teacherId: Value(adminId),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+    }
+
+    if (isOfflineMode) {
+      // Enqueue mutation for cloud push when network is restored
+      await db.syncDao.enqueue(
+        targetTable: 'schools',
+        recordId: schoolId,
+        operation: 'CREATE',
+        payloadJson: jsonEncode({
+          'schoolName': schoolName,
+          'schoolCode': schoolCode,
+          'adminName': adminName,
+          'adminPhone': adminPhone,
+          'adminEmail': email,
+          'adminPassword': adminPassword,
+          'adminPin': adminPin,
+          'district': district,
+          'tehsil': tehsil,
+          'circleOffice': circleOffice,
+        }),
+        idempotencyKey: 'offline_reg_${schoolCode}_$now',
+      );
+    }
+
+    return SchoolRegistrationResult(
+      success: true,
+      isPendingApproval: false,
+      message: isOfflineMode
+          ? 'School registered offline on this device. You can sign in and start managing your school immediately without internet. Records will sync automatically once an internet connection is available.'
+          : 'School registration submitted.',
+      schoolName: schoolName,
+      schoolCode: schoolCode,
+    );
   }
 
   // Online / Offline Login for Any Staff Member (Head Teacher or Teacher)
@@ -531,7 +694,14 @@ class AuthRepository {
                 return true;
               }
             }
-            // 3. Exact user ID or name check
+            // 3. Phone check (e.g. +923339112233 or 03339112233)
+            if (u.phone != null && digitsOnly.isNotEmpty) {
+              final phoneDigits = u.phone!.replaceAll(RegExp(r'[^0-9]'), '');
+              if (phoneDigits == digitsOnly || phoneDigits.endsWith(digitsOnly) || digitsOnly.endsWith(phoneDigits)) {
+                return true;
+              }
+            }
+            // 4. Exact user ID or name check
             return u.id == cleanIdent || u.name.toLowerCase() == lowerIdent;
           },
         ).toList();

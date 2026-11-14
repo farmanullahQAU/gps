@@ -100,9 +100,23 @@ class _SchoolLeavingCertificateViewState extends State<SchoolLeavingCertificateV
       _activeStudent == null ? -1 : _classStudents.indexWhere((s) => s.id == _activeStudent!.id);
 
   Future<void> _loadStudentsForCurrentClass({Student? initial}) async {
+    // Ensure classes and active class are loaded if opened directly from Home
+    if (_attCtrl.classesList.isEmpty || _attCtrl.selectedClass.value == null) {
+      await _attCtrl.loadClasses();
+    }
+
+    if (_attCtrl.selectedClass.value == null && _attCtrl.classesList.isNotEmpty) {
+      // Prioritize Class 5 for SLC (statutory primary school graduation)
+      final cls5 = _attCtrl.classesList.firstWhereOrNull((c) => c.numericLevel == 5) ?? _attCtrl.classesList.first;
+      await _attCtrl.selectClass(cls5);
+    }
+
     final cls = _attCtrl.selectedClass.value;
     final sec = _attCtrl.selectedSection.value;
-    if (cls == null || sec == null) return;
+    if (cls == null || sec == null) {
+      if (mounted) setState(() => _activeStudent = null);
+      return;
+    }
 
     final rawStudents = await _reportCtrl.studentRepository.getStudentsForSection(
       classId: cls.id,
@@ -131,14 +145,21 @@ class _SchoolLeavingCertificateViewState extends State<SchoolLeavingCertificateV
 
     final target = initial ??
         _reportCtrl.selectedStudent.value ??
-        (allStudents.isNotEmpty ? allStudents.first : null);
+        allStudents.firstOrNull;
 
-    if (target != null && allStudents.any((s) => s.id == target.id)) {
-      await _selectStudent(allStudents.firstWhere((s) => s.id == target.id), saveCurrent: false);
+    if (target != null) {
+      final match = allStudents.firstWhereOrNull((s) => s.id == target.id);
+      if (match != null) {
+        await _selectStudent(match, saveCurrent: false);
+      } else if (allStudents.isNotEmpty) {
+        await _selectStudent(allStudents.first, saveCurrent: false);
+      } else {
+        if (mounted) setState(() => _activeStudent = null);
+      }
     } else if (allStudents.isNotEmpty) {
       await _selectStudent(allStudents.first, saveCurrent: false);
     } else {
-      setState(() => _activeStudent = null);
+      if (mounted) setState(() => _activeStudent = null);
     }
   }
 

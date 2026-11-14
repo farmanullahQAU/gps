@@ -154,7 +154,19 @@ class AuthController extends GetxController {
   }
 
   Future<void> loadCachedSession() async {
-    currentUser.value = await authRepository.getCachedUser();
+    final cached = await authRepository.getCachedUser();
+    currentUser.value = cached;
+    if (cached != null) {
+      if (Get.isRegistered<AttendanceController>() && Get.find<AttendanceController>().classesList.isEmpty) {
+        await Get.find<AttendanceController>().loadClasses();
+      }
+      if (Get.isRegistered<AdminController>() && Get.find<AdminController>().school.value == null) {
+        await Get.find<AdminController>().loadAllAdminData();
+      }
+      if (Get.isRegistered<StudentsController>() && Get.find<StudentsController>().students.isEmpty) {
+        await Get.find<StudentsController>().loadStudents();
+      }
+    }
     await checkBiometricStatus();
 
     // Check cloud for verification status if email not verified in local cache

@@ -80,8 +80,14 @@ void main() async {
   ));
   Get.put(SaasController(saasRepository: saasRepo));
 
-  // 4. Check cached session
+  // 4. Check cached session and pre-hydrate core controllers
   final cachedUser = await authRepo.getCachedUser();
+  if (cachedUser != null) {
+    Get.find<AuthController>().currentUser.value = cachedUser;
+    await Get.find<AttendanceController>().loadClasses();
+    await Get.find<AdminController>().loadAllAdminData();
+    await Get.find<StudentsController>().loadStudents();
+  }
 
   runApp(GPSAttendanceApp(initialLoggedIn: cachedUser != null));
 }
